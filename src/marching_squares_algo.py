@@ -9,9 +9,9 @@ NumericType: TypeAlias = Union[int, float]
 
 
 # the origin is at the top left corner, just like in any graphics drawing
-def _contour_line(coordinates: tuple[int, int],
-                  tleft: bool, tright: bool,
-                  bright: bool, bleft: bool)\
+def _rough_contouring(coordinates: tuple[int, int],
+                      tleft: bool, tright: bool,
+                      bright: bool, bleft: bool)\
     -> tuple[tuple[float, float, float, float]]:
     """
     Drawing contour lines based on the four corners
@@ -37,8 +37,16 @@ def _contour_line(coordinates: tuple[int, int],
     elif case_no == 10:
         return (x + .5, x + 1, y, y + .5), (x + .5, x, y + 1, y + .5)
     
+def _smooth_contouring(coordinates: tuple[int, int],
+                      tleft: bool, tright: bool,
+                      bright: bool, bleft: bool)\
+    -> tuple[tuple[float, float, float, float]]:
+    pass
+    
+
 def draw_contours(grid: np.ndarray[NumericType],
-                  threshold: NumericType)\
+                  threshold: NumericType,
+                  smooth_lerp: bool = False)\
     -> list[tuple[float, float]]:
     """
     The marching square algorithm in its entirety.\\
@@ -81,13 +89,14 @@ def draw_contours(grid: np.ndarray[NumericType],
     lines = []
     rows, cols = grid.shape
     mask = grid > threshold
+    contouring = _smooth_contouring if smooth_lerp else _rough_contouring
     for i in range(rows - 1):
         for j in range(cols - 1):
-            line1, line2 = _contour_line((j, i),
-                                         mask[i    , j    ],
-                                         mask[i    , j + 1],
-                                         mask[i + 1, j + 1],
-                                         mask[i + 1, j    ])
+            line1, line2 = contouring((j, i),
+                                      mask[i    , j    ],
+                                      mask[i    , j + 1],
+                                      mask[i + 1, j + 1],
+                                      mask[i + 1, j    ])
             if line1:
                 lines.append(line1[:2])
                 lines.append(line1[2:])
