@@ -109,16 +109,17 @@ class SquareMarcher():
         '_perlin_model',
         '_prng',
     )
-    def __init__(self, dimension: tuple[int, int], seed: Optional[int] = int):
+    def __init__(self, dimension: tuple[int, int], seed: Optional[int] = None):
         if not isinstance(dimension, tuple):
             raise TypeError('Dimension must be a tuple of two ints.')
         elif len(dimension) != 2 or any((not isinstance(num, int) or num < 1) for num in dimension):
             raise ValueError('Number of rows and columns must be positive!')
-        if not isinstance(seed, int):
+        if seed is None:
+            seed = random.randint(0, sys.maxsize)
+        elif not isinstance(seed, int):
             raise TypeError('Random seed must be an int')
 
         self._dim = dimension
-        if seed is None: seed = random.randint(0, sys.maxsize)
         
         self._initialize_grid()
         self._prng = random.Random(seed)
