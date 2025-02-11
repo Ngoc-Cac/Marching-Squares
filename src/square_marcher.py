@@ -24,6 +24,9 @@ def _contour_line(coordinates: tuple[int, int],
                   tleft: bool, tright: bool,
                   bright: bool, bleft: bool)\
     -> tuple[tuple[float, float, float, float]]:
+    """
+    Drawing contour lines based on the four corners
+    """
     case_no = tleft * 8 + tright * 4 + bright * 2 + bleft
     x, y = coordinates
     if case_no == 0 or case_no == 15:
@@ -45,9 +48,42 @@ def _contour_line(coordinates: tuple[int, int],
     elif case_no == 10:
         return (x + .5, x + 1, y, y + .5), (x + .5, x, y + 1, y + .5)
     
-def _draw_contour(grid: np.ndarray[float],
+def _draw_contour(grid: np.ndarray[NumericType],
                   threshold: NumericType)\
     -> list[tuple[float, float]]:
+    """
+    The marching square algorithm in its entirety.\\
+    This is supposed to be a multi-purpose function for internal use.
+
+    The function will return a list of edges. Each element of the list is\
+        a tuple of two coordinates.\\
+    **This list should be read in increments of 2**.\
+        The first tuple is the `(x_from, x_to)` coordinates of the edge.\
+        The second tuple is the `(y_from, y_to)` coordinates of the edge.
+
+    This is configured for convenience of matplotlib plotting. If you have no intention\
+        of post-processing the edges, and just want to visualise the edges using `ax.plot`\
+        or similar means, see the below example::
+        
+        import matplotlib.pyplot as plt
+        import numpy as np
+        from square_marcher import _draw_contour
+        grid = np.array([[0, 0, 0, 1],
+                         [0, 1, 1, 1],
+                         [0, 0, 1, 0],
+                         [0, 0, 0, 0]])
+        edges = _draw_contour(grid, 0.5)
+        plt.plot(*edges, color='blue')
+
+    ## Parameters:
+    ``grid``: a `numpy.ndarray` of shape `(rows, cols)`. Each element should be a scalar\\
+    ``threshold``: a number representing the threshold to seperate the scalars. The scalars\
+        will be divided into two groups using the threshold: one being greater than the threshold\
+        and one being less than or equal to the threshold.
+
+    ## Returns
+    A list of tuples of floats. For more information, see above.
+    """
     lines = []
     rows, cols = grid.shape
     mask = grid > threshold
@@ -135,7 +171,6 @@ class SquareMarcher():
             x = 0
             for j in range(self._dim[1]):
                 value = self._perlin_model.get_value(x, y, z)
-                # value = .5 - value / math.sqrt(3)
                 x += speed
 
                 self._grid[i, j] = value
@@ -154,6 +189,40 @@ class SquareMarcher():
         dot_marker: str = 'o',
         animated: bool = False
     ) -> tuple[Axes, Optional[list[AxesImage, Line2D]]]:
+        """
+        Run Marching Squares on a Perlin noisemap generated with the current configuration.
+
+        ## Parameters:
+        ``ax``: a ``matplotlib.axes.Axes`` object to plot on.
+
+        ``z``: the z-level to generate Perlin noise. If None is given, a uniform random\
+            number between 0-1 and chosen instead.
+
+        ``speed``: a number specifying how much to increment x and y when moving along\
+            the plane levelled at z. A big increment will lead to a noisier noisemap.
+
+        ``line_color``: the color of contour lines. This defaults to ``(1, 1, 0.5608)``
+
+        ``cmap``: the colormap to render the noisemap. This defaults to ``'Greys'``.
+
+            *Note: this only takes effect for grids of dimension higher than 20.*\\
+            *For dimension 20 and below, noisemap is rendered as grid of points.*
+
+        ``dot_marker``: matplotlib's point marker used for rendering the noisemap.
+
+            *Note: this only takes effect for grids of dimension 20 and below. See above.*
+
+        ``animated``: whether or not to plot the artists with animated artists.\\
+        Animated objects are not drawn to canvas unless artist.set_visible(True) is\
+            called. This is useful when you need to create animation with\
+            ``matplotlib.animation.ArtistAnimation`` or similar means.\\
+        If ``animated=True``, the function will return back a list of ``matplotlib.artist.Artists``\
+            to be drawn on the given ``matplotlib.axes.Axes``.
+
+        ## Returns
+        A tuple of ``matplotlib.axes.Axes`` and optional list of ``matplotlib.artist.Artists``\
+            if ``animated=True``.
+        """
         if z is None: z = self._prng.random()
         self._generate_noisemap(z, speed)
 
@@ -180,7 +249,4 @@ class SquareMarcher():
             lines.append(ax_img)
             return ax, lines 
         else:
-            return ax, None, None
-
-    def animator(self):
-        pass
+            return ax, None
