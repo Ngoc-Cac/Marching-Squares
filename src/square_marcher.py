@@ -11,6 +11,7 @@ from matplotlib.image import AxesImage
 from matplotlib.lines import Line2D
 from matplotlib.typing import ColorType
 from typing import (
+    Literal,
     Optional,
     TypeAlias,
     Union,
@@ -190,6 +191,7 @@ class SquareMarcher():
         ax: Optional[Axes],
         z: Optional[NumericType] = None,
         speed: Optional[NumericType] = None, *,
+        thresholding_method: Literal['midpoint', 'average'] = 'midpoint',
         line_color: ColorType = (1, 1, .5608),
         cmap: str | Colormap = 'Greys',
         dot_marker: str = 'o',
@@ -207,6 +209,13 @@ class SquareMarcher():
         
             the z-level to generate Perlin noise. If None is given, a uniform random\
             number between 0-1 and chosen instead.
+
+        ``thresholding_method: Literal['midpoint', 'average']``
+
+            The method for choosing a threshold.\\
+            ``'midpoint'`` method takes the midpoint between the minimum\
+                and the maximum value in the grid.\\
+            ``'average'`` method takes the arithmetic mean across all values.
 
         ``speed: int | float``
 
@@ -247,7 +256,10 @@ class SquareMarcher():
         if z is None: z = self._prng.random()
         self._generate_noisemap(z, speed)
 
-        threshold = (self._grid.max() + self._grid.min()) / 2
+        if thresholding_method == 'midpoint':
+            threshold = (self._grid.max() + self._grid.min()) / 2
+        elif thresholding_method == 'average':
+            threshold = self._grid.mean()
 
         ax.set_xlim(0, self._dim[1] - 1)
         ax.set_ylim(self._dim[0] - 1, 0)
