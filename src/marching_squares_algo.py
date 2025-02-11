@@ -37,7 +37,7 @@ def _contour_line(coordinates: tuple[int, int],
     elif case_no == 10:
         return (x + .5, x + 1, y, y + .5), (x + .5, x, y + 1, y + .5)
     
-def draw_contour(grid: np.ndarray[NumericType],
+def draw_contours(grid: np.ndarray[NumericType],
                   threshold: NumericType)\
     -> list[tuple[float, float]]:
     """
