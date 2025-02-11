@@ -72,7 +72,6 @@ class SquareMarcher():
         '_grid',
         '_perlin_model',
         '_prng',
-        '_seed',
     )
     def __init__(self, dimension: tuple[int, int], seed: Optional[int] = int):
         if not isinstance(dimension, tuple):
@@ -119,7 +118,7 @@ class SquareMarcher():
 
     @property
     def seed(self) -> int:
-        return self._seed
+        return self._perlin_model.seed
     @seed.setter
     def seed(self, value: int):
         if not isinstance(value, int):
@@ -160,8 +159,8 @@ class SquareMarcher():
 
         threshold = (self._grid.max() + self._grid.min()) / 2
 
-        if not ax.yaxis_inverted():
-            ax.invert_yaxis()
+        ax.set_xlim(0, self._dim[1] - 1)
+        ax.set_ylim(self._dim[0] - 1, 0)
 
         if not animated and (self._dim[0] < 20 or self._dim[1] < 20):
             gmin, gmax = self._grid.min(), self._grid.max()
