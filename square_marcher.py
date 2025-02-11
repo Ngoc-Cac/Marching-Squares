@@ -1,11 +1,14 @@
-import math, random, sys
+import random, sys
+
 
 import numpy as np
 
+from matplotlib.axes import Axes
+from matplotlib.image import AxesImage
+from matplotlib.lines import Line2D
+
 from pynoise.noisemodule import Perlin
 
-from matplotlib.pyplot import figure
-from matplotlib.axes import Axes
 
 from typing import (
     Optional,
@@ -149,30 +152,36 @@ class SquareMarcher():
         speed: Optional[NumericType] = None, *,
         line_color: tuple[float, float, float] = (1, 1, .5608),
         cmap: str = 'Greys',
-        dot_marker: str = 'o'
-    ) -> Axes:
+        dot_marker: str = 'o',
+        animated: bool = False
+    ) -> tuple[Axes, Optional[list[AxesImage, Line2D]]]:
         if z is None: z = self._prng.random()
         self._generate_noisemap(z, speed)
 
         threshold = (self._grid.max() + self._grid.min()) / 2
 
-        if ax is None:
-            ax = figure().add_subplot(111)
-            ax.axis('off')
         if not ax.yaxis_inverted():
             ax.invert_yaxis()
 
-        if self._dim[0] < 20 or self._dim[1] < 20:
+        if not animated and (self._dim[0] < 20 or self._dim[1] < 20):
             gmin, gmax = self._grid.min(), self._grid.max()
             color_mat = 1 - (self._grid - gmin) / (gmax - gmin)
 
             ax.get_figure().set_facecolor('0.7')
             for i, row in enumerate(color_mat):
                 for j, val in enumerate(row):
-                    ax.plot([j], [i], dot_marker, color=str(val), mec='0')
-        else: ax.imshow(self._grid, cmap=cmap)
-        ax.plot(*_draw_contour(self._grid, threshold), color=line_color)
-        return ax
+                    ax.plot([j], [i], dot_marker, color=str(val), mec='0',
+                            animated=animated)
+        else:
+            ax_img = ax.imshow(self._grid, cmap=cmap, animated=animated)
+
+        lines = ax.plot(*_draw_contour(self._grid, threshold),
+                        color=line_color, animated=animated)
+        if animated:
+            lines.append(ax_img)
+            return ax, lines 
+        else:
+            return ax, None, None
 
     def animator(self):
         pass
