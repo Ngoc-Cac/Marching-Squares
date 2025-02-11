@@ -20,11 +20,10 @@ def generate_frames(square_marcher: SquareMarcher,
         fig.subplots_adjust(0, 0, 1, 1, None, None)
     ax = fig.add_subplot(111)
     ax.axis('off')
-    ax.invert_yaxis()
 
     frames = []
     for _ in range(frames_count):
         _, artists = square_marcher.run(ax, z_start, speed, animated=True)
-        frames.append([artists])
+        frames.append(artists)
         z_start += z_speed
     return fig, frames
