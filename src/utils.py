@@ -1,10 +1,10 @@
-from matplotlib.image import AxesImage
-from matplotlib.lines import Line2D
-from matplotlib.figure import Figure
 from matplotlib.pyplot import figure
 
 from square_marcher import SquareMarcher
 
+from matplotlib.figure import Figure
+from matplotlib.image import AxesImage
+from matplotlib.lines import Line2D
 from square_marcher import NumericType
 from typing import (
     Optional,
@@ -19,15 +19,47 @@ def generate_frames(
     *,
     z_start: NumericType,
     z_speed: NumericType,
-    frames_count: int,
+    frame_counts: int,
     fig: Optional[Figure] = None
 ) -> tuple[Figure, list[list[AxesImage, Line2D]]]:
     """
-    Utility function for creating frames to be used in ``matplotlib.animation.ArtistAnimation``
+    Utility function for creating frames to be used in ``matplotlib.animation.ArtistAnimation``.
+    The frames will be created from a z value starting at ``z_start`` and incrementnig by ``z_speed``\
+        for each ``frame_counts``.
 
     ## Parameters:
-    ``square_marcher``: a ``SquareMarcher`` object configured to be run.
-    ``z_start``
+    ``square_marcher: SquareMarcher``
+    
+        a ``SquareMarcher`` object already configured to be run
+
+    ``speed: int | float``
+
+        the x and y speed when generting the nosimap. Larger value of speed will cause\
+            the noisemap to be noisier.
+
+    ``z_start: int | float``
+        
+        the starting z value
+
+    ``z_speed: int | float``
+        
+        the increment to go up by each frame. For large increment, the change through each frame\
+            might be very chaotic
+
+    ``frame_counts: int``
+        
+        the number of frames in the animation, must be positive
+
+    ``fig: matplotlib.figure.Figure | None``
+
+        the figure on which the animation is drawn on. If None is given,\
+            a 6in x 6in ``matplotlib.figure.Figure`` is created.
+
+    # Returns
+    The ``matplotlib.figure.Figure`` that was used to draw on and a list of lists\
+        of ``matplotlib.artist.Artist``. This list can be passed straight into a\
+        ``matplotlib.animation.ArtistAnimation``. Each sub-list of this list contains\
+        the artists to be drawn on that frame.
     """
 @overload
 def generate_frames(
@@ -37,7 +69,32 @@ def generate_frames(
     fig: Optional[Figure] = None,
 ) -> tuple[Figure, list[list[AxesImage, Line2D]]]:
     """
-    Overloaded 2
+    Utility function for creating frames to be used in ``matplotlib.animation.ArtistAnimation``
+
+    ## Parameters:
+    ``square_marcher: SquareMarcher``
+    
+        a ``SquareMarcher`` object already configured to be run
+
+    ``speed: int | float``
+
+        the x and y speed when generting the nosimap. Larger value of speed will cause\
+            the noisemap to be noisier.
+
+    ``*zs: int | float``
+
+        the z values on each frame used to generate the noisemap
+
+    ``fig: matplotlib.figure.Figure | None``
+
+        the figure on which the animation is drawn on. If None is given,\
+            a 6in x 6in ``matplotlib.figure.Figure`` is created.
+
+    # Returns
+    The ``matplotlib.figure.Figure`` that was used to draw on and a list of lists\
+        of ``matplotlib.artist.Artist``. This list can be passed straight into a\
+        ``matplotlib.animation.ArtistAnimation``. Each sub-list of this list contains\
+        the artists to be drawn on that frame.
     """
 
 def generate_frames(
@@ -46,7 +103,7 @@ def generate_frames(
     *args: NumericType,
     z_start: NumericType = None,
     z_speed: NumericType = None,
-    frames_count: int = None,
+    frame_counts: int = None,
     fig: Optional[Figure] = None
 ) -> tuple[Figure, list[list[AxesImage, Line2D]]]:
     if not isinstance(square_marcher, SquareMarcher):
@@ -55,14 +112,14 @@ def generate_frames(
         raise TypeError(f"'speed' must be of type {NumericType}: {speed}")
     
     if args:
-        if not (z_start is None and z_speed is None and frames_count is None):
+        if not (z_start is None and z_speed is None and frame_counts is None):
             raise TypeError("generate_frames() received too many arguments")
         zs = args
     else:
         missing = []
         if z_start is None: missing.append("'z_start'")
         if z_speed is None: missing.append("'z_speed'")
-        if frames_count is None: missing.append("'frames_count'")
+        if frame_counts is None: missing.append("'frame_counts'")
         if missing:
             raise TypeError(f"generate_frames() missing {len(missing)} required keyword arguments: {', '.join(missing)}")
         
@@ -70,12 +127,12 @@ def generate_frames(
             raise TypeError(f"'z_start must be of type {NumericType}: {z_start}")
         if not isinstance(z_speed, NumericType):
             raise TypeError(f"'z_speed must be of type {NumericType}: {z_speed}")
-        if not isinstance(frames_count, int):
-            raise TypeError(f"'frames_count must be of type int: {frames_count}")
-        elif frames_count < 1:
-            raise ValueError(f"'frames_count' must be positive: {frames_count}")
+        if not isinstance(frame_counts, int):
+            raise TypeError(f"'frame_counts must be of type int: {frame_counts}")
+        elif frame_counts < 1:
+            raise ValueError(f"'frame_counts' must be positive: {frame_counts}")
         
-        zs = (z_start + z_speed * i for i in range(frames_count))
+        zs = (z_start + z_speed * i for i in range(frame_counts))
 
     if not fig is None:
         if not isinstance(fig, Figure):
@@ -88,8 +145,5 @@ def generate_frames(
 
     ax = fig.add_subplot(111)
     ax.axis('off')
-    frames = []
-    for z in zs:
-        _, artists = square_marcher.run(ax, z, speed, animated=True)
-        frames.append(artists)
+    frames = [square_marcher.run(ax, z, speed, animated=True)[1] for z in zs]
     return fig, frames
