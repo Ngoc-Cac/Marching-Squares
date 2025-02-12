@@ -10,4 +10,13 @@ For only one given threshold, the scalars have two states (less than or greater 
 For more information, visit [Marching Squares](https://en.wikipedia.org/wiki/Marching_squares).
 
 ## The code
-The code is provided in `/src`. Please check out `/src/demo.ipynb` for examples.
+The code is provided in `/src/marching_squares`. There are currently a raw algorithm and a class wrapper for the algorithm.
+
+The raw algorithm can run on any 2D matrices containing scalars. For colored images, consider converting them to grayscale or any other means to encode the color tuple.
+![Each value here represents the distance from the ellipse's center](./assets/pngs/ellipse.png)
+
+The class wrapper runs the algorithm on noisemaps generated using Perlin Noise.
+![](./assets/pngs/march_zlerp-0_100x100.png)
+
+Please check out `/src/demo.ipynb` for examples.
+![](./assets/gifs/march_zlerp-0_100x100.gif)
