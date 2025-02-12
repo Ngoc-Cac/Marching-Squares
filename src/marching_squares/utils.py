@@ -1,11 +1,12 @@
 from matplotlib.pyplot import figure
 
-from square_marcher import SquareMarcher
+from marching_squares.square_marcher import SquareMarcher
 
+# These are typing stuff and are not involved in the code
 from matplotlib.figure import Figure
 from matplotlib.image import AxesImage
 from matplotlib.lines import Line2D
-from square_marcher import NumericType
+from marching_squares import NumericType
 from typing import (
     Optional,
     overload

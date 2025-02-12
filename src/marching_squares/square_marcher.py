@@ -4,32 +4,36 @@ import numpy as np
 
 from pynoise.noisemodule import Perlin
 
-from marching_squares_algo import draw_contours
+from marching_squares.algo import draw_contours
 
-
+# This is typing stuff, not involved in the actual code
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
 from matplotlib.image import AxesImage
 from matplotlib.lines import Line2D
 from matplotlib.typing import ColorType
+from marching_squares import NumericType
 from typing import (
     Literal,
     Optional,
-    TypeAlias,
-    Union,
 )
-
-NumericType: TypeAlias = Union[int, float]
 
 
 class SquareMarcher():
     __slots__ = (
         '_dim',
         '_grid',
+        '_lerping',
         '_perlin_model',
         '_prng',
+        '_thres_method',
     )
-    def __init__(self, dimension: tuple[int, int], seed: Optional[int] = None):
+    def __init__(self,
+                 dimension: tuple[int, int],
+                 seed: Optional[int] = None,
+                 threshold_method: Literal['midpoint', 'average'] = 'midpoint',
+                 lerping: bool = False
+    ):
         if not isinstance(dimension, tuple):
             raise TypeError('Dimension must be a tuple of two ints.')
         elif len(dimension) != 2 or any((not isinstance(num, int) or num < 1) for num in dimension):
@@ -38,8 +42,14 @@ class SquareMarcher():
             seed = random.randint(0, sys.maxsize)
         elif not isinstance(seed, int):
             raise TypeError('Random seed must be an int')
+        if not threshold_method in ['midpoint', 'average']:
+            raise ValueError(f"Expected 'threshold_method' to be 'midpoint' or 'average': {threshold_method}")
+        if not isinstance(lerping, bool):
+            raise TypeError("'lerping' must be a bool")
 
         self._dim = dimension
+        self._thres_method = threshold_method
+        self._lerping = lerping
         
         self._initialize_grid()
         self._prng = random.Random(seed)
@@ -63,6 +73,15 @@ class SquareMarcher():
         return self._grid
     
     @property
+    def lerping(self) -> bool:
+        return self._lerping
+    @lerping.setter
+    def lerping(self, value: bool):
+        if not isinstance(value, bool):
+            raise TypeError("'lerping' must be a bool")
+        self._lerping = value
+
+    @property
     def octaves(self):
         return self._perlin_model.octaves
     @octaves.setter
@@ -82,6 +101,14 @@ class SquareMarcher():
             raise TypeError('seed must be an int')
         self._prng.seed(value)
         self._perlin_model.seed = value
+
+    @property
+    def threshold_method(self) -> Literal['midpoint', 'average']:
+        return self._thres_method
+    @threshold_method.setter
+    def threshold_method(self, value: Literal['midpoint', 'average']):
+        if not value in ['midpoint', 'average']:
+            raise ValueError(f"Expected 'threshold_method' to be 'midpoint' or 'average': {value}")
 
 
     def _generate_noisemap(self, z: NumericType,
@@ -105,7 +132,6 @@ class SquareMarcher():
         ax: Optional[Axes],
         z: Optional[NumericType] = None,
         speed: Optional[NumericType] = None, *,
-        thresholding_method: Literal['midpoint', 'average'] = 'midpoint',
         line_color: ColorType = (1, 1, .5608),
         cmap: str | Colormap = 'Greys',
         dot_marker: str = 'o',
@@ -123,13 +149,6 @@ class SquareMarcher():
         
             the z-level to generate Perlin noise. If None is given, a uniform random\
             number between 0-1 and chosen instead.
-
-        ``thresholding_method: Literal['midpoint', 'average']``
-
-            The method for choosing a threshold.\\
-            ``'midpoint'`` method takes the midpoint between the minimum\
-                and the maximum value in the grid.\\
-            ``'average'`` method takes the arithmetic mean across all values.
 
         ``speed: int | float``
 
@@ -170,9 +189,9 @@ class SquareMarcher():
         if z is None: z = self._prng.random()
         self._generate_noisemap(z, speed)
 
-        if thresholding_method == 'midpoint':
+        if self._thres_method == 'midpoint':
             threshold = (self._grid.max() + self._grid.min()) / 2
-        elif thresholding_method == 'average':
+        elif self._thres_method == 'average':
             threshold = self._grid.mean()
 
         ax.set_xlim(0, self._dim[1] - 1)
@@ -190,7 +209,7 @@ class SquareMarcher():
         else:
             ax_img = ax.imshow(self._grid, cmap=cmap, animated=animated)
 
-        lines = ax.plot(*draw_contours(self._grid, threshold),
+        lines = ax.plot(*draw_contours(self._grid, threshold, lerp=self._lerping),
                         color=line_color, animated=animated)
         if animated:
             lines.append(ax_img)
