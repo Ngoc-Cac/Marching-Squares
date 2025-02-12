@@ -309,6 +309,16 @@ class PerlinMarcher(SquareMarcher):
             seed = random.randint(0, sys.maxsize)
         elif not isinstance(seed, int):
             raise TypeError('Random seed must be an int')
+        if not isinstance(frequency, NumericType):
+            raise TypeError('frequency must be an int or float')
+        if not isinstance(lacunarity, NumericType):
+            raise TypeError('lacunarity must be an int or float')
+        if not isinstance(octaves, int):
+            raise TypeError('octaves must be a positive int')
+        elif octaves < 1:
+            raise ValueError('octaves must be a positive int')
+        if not isinstance(persistence, NumericType):
+            raise TypeError('persistence must be an int or float')
         noise_model = Perlin(frequency, lacunarity, octaves, persistence, seed)
 
         super().__init__(dimension, noise_model, seed, threshold_method, lerping)
@@ -402,6 +412,12 @@ class VoronoiMarcher(SquareMarcher):
             seed = random.randint(0, sys.maxsize)
         elif not isinstance(seed, int):
             raise TypeError('Random seed must be an int')
+        if not isinstance(frequency, NumericType):
+            raise TypeError('frequency must be an int or float')
+        if not isinstance(enable_distance, bool):
+            raise TypeError('enable_distance must be a bool')
+        if not isinstance(displacement, NumericType):
+            raise TypeError('displacement must be an int or float')
         noise_model = Voronoi(displacement, enable_distance, frequency)
 
         super().__init__(dimension, noise_model, seed, threshold_method, lerping)
