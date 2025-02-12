@@ -20,6 +20,10 @@ from typing import (
 
 
 class SquareMarcher():
+    """
+    This is a class wrapper for the Marching Squares algorithm running on a randomly generated noisemap\
+        using 3D Perlin Noise.
+    """
     __slots__ = (
         '_dim',
         '_grid',
@@ -35,6 +39,37 @@ class SquareMarcher():
                  threshold_method: Literal['midpoint', 'average'] | int = 'midpoint',
                  lerping: bool = False
     ):
+        """
+        Initialize SquareMarcher object. This is a Marching Squares algorithm that runs\
+            on a noisemap generated with 3d Perline Noise.
+
+        ## Parameters:
+        ``dimension: tuple[int, int]``
+
+            the dimension of the noisemap in pixels.
+
+        ``seed: Optional[int]``
+
+            the seed for any prng used by the SquareMarcher, including the Perlin Noise generator.\
+                This defaults to None and a random seed will be generated
+
+        ``threshold_method: Literal['midpoint', 'average'] | int``
+
+            the thresholding method to use on the noisemap. This defaults to ``'midpoint'`` and \
+                the mid-range value betwen the max and min value in the noise map will use.\\
+            If ``'average'`` is specified instead, the arithmetic mean across all values will be used.\\
+            An integer ``q`` in the range [0, 100] can be specified as well, in which case,\
+                the q-th percentile will be used as the threshold.
+
+        ``lerping: bool``
+
+            whether or not to use linear interpolation to find the endpoint of the contour lines.\
+                Using linear interpolation will lead to smoother contour lines along regions. This\
+                defaults to False.
+
+        ## Raises
+        Various TypeError and ValueError if you didn't read the docstring carefully.
+        """
         if not isinstance(dimension, tuple):
             raise TypeError('Dimension must be a tuple of two ints.')
         elif len(dimension) != 2 or any((not isinstance(num, int) or num < 1) for num in dimension):
