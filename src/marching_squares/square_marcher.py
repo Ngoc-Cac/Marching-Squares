@@ -26,12 +26,13 @@ class SquareMarcher():
         '_lerping',
         '_perlin_model',
         '_prng',
+        '_qth',
         '_thres_method',
     )
     def __init__(self,
                  dimension: tuple[int, int],
                  seed: Optional[int] = None,
-                 threshold_method: Literal['midpoint', 'average'] = 'midpoint',
+                 threshold_method: Literal['midpoint', 'average'] | int = 'midpoint',
                  lerping: bool = False
     ):
         if not isinstance(dimension, tuple):
@@ -42,8 +43,13 @@ class SquareMarcher():
             seed = random.randint(0, sys.maxsize)
         elif not isinstance(seed, int):
             raise TypeError('Random seed must be an int')
-        if not threshold_method in ['midpoint', 'average']:
-            raise ValueError(f"Expected 'threshold_method' to be 'midpoint' or 'average': {threshold_method}")
+        if isinstance(threshold_method, int):
+            if threshold_method > 100 or threshold_method < 0:
+                raise ValueError('Percentage of percentile must be in the range [0, 100]')
+            self._qth = threshold_method
+            threshold_method = 'percentile'
+        elif not threshold_method in ['midpoint', 'average']:
+            raise ValueError(f"Expected 'threshold_method' to be 'midpoint' or 'average' or a percentile percentage: {threshold_method}")
         if not isinstance(lerping, bool):
             raise TypeError("'lerping' must be a bool")
 
@@ -106,9 +112,15 @@ class SquareMarcher():
     def threshold_method(self) -> Literal['midpoint', 'average']:
         return self._thres_method
     @threshold_method.setter
-    def threshold_method(self, value: Literal['midpoint', 'average']):
-        if not value in ['midpoint', 'average']:
-            raise ValueError(f"Expected 'threshold_method' to be 'midpoint' or 'average': {value}")
+    def threshold_method(self, value: Literal['midpoint', 'average'] | int):
+        if isinstance(value, int):
+            if value > 100 or value < 0:
+                raise ValueError('Percentage of percentile must be in the range [0, 100]')
+            self._qth = value
+            value = 'percentile'
+        elif not value in ['midpoint', 'average']:
+            raise ValueError(f"Expected 'threshold_method' to be 'midpoint' or 'average' or a percentile percentage: {value}")
+        self._thres_method = value
 
 
     def _generate_noisemap(self, z: NumericType,
@@ -193,6 +205,8 @@ class SquareMarcher():
             threshold = (self._grid.max() + self._grid.min()) / 2
         elif self._thres_method == 'average':
             threshold = self._grid.mean()
+        elif self._thres_method == 'percentile':
+            threshold = np.percentile(self._grid, self._qth)
 
         ax.set_xlim(0, self._dim[1] - 1)
         ax.set_ylim(self._dim[0] - 1, 0)
