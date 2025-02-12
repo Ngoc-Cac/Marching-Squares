@@ -2,7 +2,7 @@ import random, sys
 
 import numpy as np
 
-from pynoise.noisemodule import Perlin
+from pynoise.noisemodule import Perlin, Voronoi
 
 from marching_squares.algo import draw_contours
 
@@ -22,22 +22,23 @@ from typing import (
 class SquareMarcher():
     """
     This is a class wrapper for the Marching Squares algorithm running on a randomly generated noisemap\
-        using 3D Perlin Noise.
+        using 3D Noise Generator.
     """
     __slots__ = (
         '_dim',
         '_grid',
         '_lerping',
-        '_perlin_model',
+        '_noise_model',
         '_prng',
         '_qth',
         '_thres_method',
     )
     def __init__(self,
                  dimension: tuple[int, int],
+                 noise_model: Perlin | Voronoi,
                  seed: Optional[int] = None,
                  threshold_method: Literal['midpoint', 'average'] | int = 'midpoint',
-                 lerping: bool = False
+                 lerping: bool = False,
     ):
         """
         Initialize SquareMarcher object. This is a Marching Squares algorithm that runs\
@@ -74,6 +75,8 @@ class SquareMarcher():
             raise TypeError('Dimension must be a tuple of two ints.')
         elif len(dimension) != 2 or any((not isinstance(num, int) or num < 1) for num in dimension):
             raise ValueError('Number of rows and columns must be positive!')
+        if not isinstance(noise_model, (Perlin, Voronoi)):
+            raise TypeError('Noise model must either be Perlin Noise or Voronoi Noise model')
         if seed is None:
             seed = random.randint(0, sys.maxsize)
         elif not isinstance(seed, int):
@@ -94,7 +97,7 @@ class SquareMarcher():
         
         self._initialize_grid()
         self._prng = random.Random(seed)
-        self._perlin_model = Perlin(octaves=2, seed=seed)
+        self._noise_model = noise_model
 
     
     @property
@@ -123,25 +126,14 @@ class SquareMarcher():
         self._lerping = value
 
     @property
-    def octaves(self):
-        return self._perlin_model.octaves
-    @octaves.setter
-    def octaves(self, value: int):
-        if not isinstance(value, int):
-            raise TypeError('octaves must be a positive int')
-        elif value < 1:
-            raise ValueError('octaves must be a positive int')
-        self._perlin_model.octaves = value
-
-    @property
     def seed(self) -> int:
-        return self._perlin_model.seed
+        return self._noise_model.seed
     @seed.setter
     def seed(self, value: int):
         if not isinstance(value, int):
             raise TypeError('seed must be an int')
         self._prng.seed(value)
-        self._perlin_model.seed = value
+        self._noise_model.seed = value
 
     @property
     def threshold_method(self) -> Literal['midpoint', 'average']:
@@ -165,7 +157,7 @@ class SquareMarcher():
         for i in range(self._dim[0]):
             x = 0
             for j in range(self._dim[1]):
-                value = self._perlin_model.get_value(x, y, z)
+                value = self._noise_model.get_value(x, y, z)
                 x += speed
 
                 self._grid[i, j] = value
@@ -265,3 +257,97 @@ class SquareMarcher():
             return ax, lines 
         else:
             return ax, None
+        
+
+class PerlinMarcher(SquareMarcher):
+    """
+    This class uses 3D Perlin Noise to generate a noisemap and then run Marching Squares on the noisemap.
+    """
+    __slots__ = ()
+    def __init__(self,
+                 dimension: tuple[int, int],
+                 seed: Optional[int] = None,
+                 threshold_method: Literal['midpoint', 'average'] | int = 'midpoint',
+                 lerping: bool = False,
+                 frequency: NumericType = 1,
+                 lacunarity: NumericType = 2,
+                 octaves: int = 2,
+                 persistence: NumericType = 0.25
+    ):
+        """
+        Initialize PerlinMarcher object. This is a Marching Squares algorithm that runs\
+            on a noisemap generated with 3d Perline Noise.
+
+        ## Parameters:
+        ``dimension: tuple[int, int]``
+
+            the dimension of the noisemap in pixels.
+
+        ``seed: Optional[int]``
+
+            the seed for any prng used by the SquareMarcher, including the Perlin Noise generator.\
+                This defaults to None and a random seed will be generated
+
+        ``threshold_method: Literal['midpoint', 'average'] | int``
+
+            the thresholding method to use on the noisemap. This defaults to ``'midpoint'`` and \
+                the mid-range value betwen the max and min value in the noise map will use.\\
+            If ``'average'`` is specified instead, the arithmetic mean across all values will be used.\\
+            An integer ``q`` in the range [0, 100] can be specified as well, in which case,\
+                the q-th percentile will be used as the threshold.
+
+        ``lerping: bool``
+
+            whether or not to use linear interpolation to find the endpoint of the contour lines.\
+                Using linear interpolation will lead to smoother contour lines along regions. This\
+                defaults to False.
+
+        ## Raises
+        Various TypeError and ValueError if you didn't read the docstring carefully.
+        """
+        if seed is None:
+            seed = random.randint(0, sys.maxsize)
+        elif not isinstance(seed, int):
+            raise TypeError('Random seed must be an int')
+        noise_model = Perlin(frequency, lacunarity, octaves, persistence, seed)
+
+        super().__init__(dimension, noise_model, seed, threshold_method, lerping)
+
+    
+    @property
+    def frequency(self) -> NumericType:
+        return self._noise_model.frequency
+    @frequency.setter
+    def frequency(self, value: NumericType):
+        if not isinstance(value, NumericType):
+            raise TypeError('frequency must be an int or float')
+        self._noise_model.frequency = value
+
+    @property
+    def lacunarity(self) -> NumericType:
+        return self._noise_model.lacunarity
+    @lacunarity.setter
+    def lacunarity(self, value: NumericType):
+        if not isinstance(value, NumericType):
+            raise TypeError('lacunarity must be an int or float')
+        self._noise_model.lacunarity = value
+
+    @property
+    def persistence(self) -> NumericType:
+        return self._noise_model.persistence
+    @persistence.setter
+    def persistence(self, value: NumericType):
+        if not isinstance(value, NumericType):
+            raise TypeError('persistence must be an int or float')
+        self._noise_model.persistence = value
+
+    @property
+    def octaves(self) -> int:
+        return self._noise_model.octaves
+    @octaves.setter
+    def octaves(self, value: int):
+        if not isinstance(value, int):
+            raise TypeError('octaves must be a positive int')
+        elif value < 1:
+            raise ValueError('octaves must be a positive int')
+        self._noise_model.octaves = value
