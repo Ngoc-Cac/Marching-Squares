@@ -11,3 +11,6 @@ logs/
 # IPython
 profile_default/
 ipython_config.py
+
+# test files
+test.*
