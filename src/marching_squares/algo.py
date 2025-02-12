@@ -71,7 +71,7 @@ def _smooth_contouring(coordinates: tuple[int, int],
     -> tuple[tuple[float, float, float, float]]:
     """
     Drawing contour lines based on the four corners' states with linear interpolation\
-        using their values to find the intersection
+        using their values to find the intersection.
     """
     case_no = tleft * 8 + tright * 4 + bright * 2 + bleft
     x, y = coordinates
@@ -120,7 +120,7 @@ def draw_contours(grid: np.ndarray[NumericType],
                   lerp: bool = False)\
     -> list[tuple[float, float]]:
     """
-    The marching square algorithm in its entirety.\\
+    The Marching Squares algorithm in its entirety.\\
     This is supposed to be a multi-purpose function for internal use.
 
     The function will return a list of edges. Each element of the list is\
