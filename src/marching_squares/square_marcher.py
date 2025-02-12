@@ -351,3 +351,85 @@ class PerlinMarcher(SquareMarcher):
         elif value < 1:
             raise ValueError('octaves must be a positive int')
         self._noise_model.octaves = value
+
+class VoronoiMarcher(SquareMarcher):
+    """
+    This is a class wrapper for the Marching Squares algorithm running on a randomly generated noisemap\
+        using 3D Voronoi Noise.
+    """
+    __slots__ = ()
+    def __init__(self,
+                 dimension: tuple[int, int],
+                 seed: Optional[int] = None,
+                 threshold_method: Literal['midpoint', 'average'] | int = 'midpoint',
+                 lerping: bool = False,
+                 displacement: NumericType = 1,
+                 enable_distance: bool = False,
+                 frequency: NumericType = 1
+    ):
+        """
+        Initialize SquareMarcher object. This is a Marching Squares algorithm that runs\
+            on a noisemap generated with 3d Perline Noise.
+
+        ## Parameters:
+        ``dimension: tuple[int, int]``
+
+            the dimension of the noisemap in pixels.
+
+        ``seed: Optional[int]``
+
+            the seed for any prng used by the SquareMarcher, including the Perlin Noise generator.\
+                This defaults to None and a random seed will be generated
+
+        ``threshold_method: Literal['midpoint', 'average'] | int``
+
+            the thresholding method to use on the noisemap. This defaults to ``'midpoint'`` and \
+                the mid-range value betwen the max and min value in the noise map will use.\\
+            If ``'average'`` is specified instead, the arithmetic mean across all values will be used.\\
+            An integer ``q`` in the range [0, 100] can be specified as well, in which case,\
+                the q-th percentile will be used as the threshold.
+
+        ``lerping: bool``
+
+            whether or not to use linear interpolation to find the endpoint of the contour lines.\
+                Using linear interpolation will lead to smoother contour lines along regions. This\
+                defaults to False.
+
+        ## Raises
+        Various TypeError and ValueError if you didn't read the docstring carefully.
+        """
+        if seed is None:
+            seed = random.randint(0, sys.maxsize)
+        elif not isinstance(seed, int):
+            raise TypeError('Random seed must be an int')
+        noise_model = Voronoi(displacement, enable_distance, frequency)
+
+        super().__init__(dimension, noise_model, seed, threshold_method, lerping)
+
+    
+    @property
+    def frequency(self) -> NumericType:
+        return self._noise_model.frequency
+    @frequency.setter
+    def frequency(self, value: NumericType):
+        if not isinstance(value, NumericType):
+            raise TypeError('frequency must be an int or float')
+        self._noise_model.frequency = value
+    
+    @property
+    def enable_distance(self) -> bool:
+        return self._noise_model.enable_distance
+    @enable_distance.setter
+    def enable_distance(self, value: bool):
+        if not isinstance(value, bool):
+            raise TypeError('enable_distance must be a bool')
+        self._noise_model.enable_distance = value
+
+    @property
+    def displacement(self) -> NumericType:
+        return self._noise_model.displacement
+    @displacement.setter
+    def displacement(self, value: NumericType):
+        if not isinstance(value, NumericType):
+            raise TypeError('displacement must be an int or float')
+        self._noise_model.displacement = value
