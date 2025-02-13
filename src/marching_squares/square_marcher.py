@@ -2,22 +2,29 @@ import random, sys
 
 import numpy as np
 
-from pynoise.noisemodule import Perlin, Voronoi
+from pynoise.noisemodule import (
+    Perlin,
+    Voronoi
+)
 
 from marching_squares.algo import draw_contours
 
 # This is typing stuff, not involved in the actual code
+from numpy.typing import NDArray
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
 from matplotlib.image import AxesImage
 from matplotlib.lines import Line2D
 from matplotlib.typing import ColorType
-from marching_squares import NumericType
+from marching_squares import (
+    NoiseModule,
+    NoiseModuleType,
+    NumericType,
+)
 from typing import (
     Literal,
     Optional,
 )
-
 
 class SquareMarcher():
     """
@@ -28,26 +35,32 @@ class SquareMarcher():
         '_dim',
         '_grid',
         '_lerping',
-        '_noise_model',
+        '_noise_module',
         '_prng',
         '_qth',
+        '_seed',
         '_thres_method',
     )
     def __init__(self,
                  dimension: tuple[int, int],
-                 noise_model: Perlin | Voronoi,
+                 noise_module: NoiseModuleType,
                  seed: Optional[int] = None,
                  threshold_method: Literal['midpoint', 'average'] | int = 'midpoint',
                  lerping: bool = False,
     ):
         """
         Initialize SquareMarcher object. This is a Marching Squares algorithm that runs\
-            on a noisemap generated with 3d Perline Noise.
+            on a noisemap generated with 3d Gradient Noise Generator.
 
         ## Parameters:
         ``dimension: tuple[int, int]``
 
             the dimension of the noisemap in pixels.
+
+        ``noise_module: pynoise.noisemodule.NoiseModule``
+
+            the noise module to use for generating noisemap. This should be a subclass\
+                of the base class pynoise.noisemodule.NoiseModule
 
         ``seed: Optional[int]``
 
@@ -74,9 +87,9 @@ class SquareMarcher():
         if not isinstance(dimension, tuple):
             raise TypeError('Dimension must be a tuple of two ints.')
         elif len(dimension) != 2 or any((not isinstance(num, int) or num < 1) for num in dimension):
-            raise ValueError('Number of rows and columns must be positive!')
-        if not isinstance(noise_model, (Perlin, Voronoi)):
-            raise TypeError('Noise model must either be Perlin Noise or Voronoi Noise model')
+            raise ValueError("'dimension' must be a tuple of two positive integers")
+        if not isinstance(noise_module, NoiseModule):
+            raise TypeError('Noise module must be subclass of pynoise.noismodule.NoiseModule')
         if seed is None:
             seed = random.randint(0, sys.maxsize)
         elif not isinstance(seed, int):
@@ -92,12 +105,13 @@ class SquareMarcher():
             raise TypeError("'lerping' must be a bool")
 
         self._dim = dimension
-        self._thres_method = threshold_method
+        self._thres_method: Literal['midpoint', 'average', 'percentile'] = threshold_method
         self._lerping = lerping
         
         self._initialize_grid()
+        self._seed = seed
         self._prng = random.Random(seed)
-        self._noise_model = noise_model
+        self._noise_module = noise_module
 
     
     @property
@@ -113,7 +127,7 @@ class SquareMarcher():
         self._initialize_grid()
 
     @property
-    def grid(self) -> np.ndarray[float]:
+    def grid(self) -> NDArray[np.float64]:
         return self._grid
     
     @property
@@ -127,16 +141,16 @@ class SquareMarcher():
 
     @property
     def seed(self) -> int:
-        return self._noise_model.seed
+        return self._seed
     @seed.setter
     def seed(self, value: int):
         if not isinstance(value, int):
             raise TypeError('seed must be an int')
-        self._prng.seed(value)
-        self._noise_model.seed = value
+        self._seed = value
+        self._prng.seed(self._seed)
 
     @property
-    def threshold_method(self) -> Literal['midpoint', 'average']:
+    def threshold_method(self) -> Literal['midpoint', 'average', 'percentile']:
         return self._thres_method
     @threshold_method.setter
     def threshold_method(self, value: Literal['midpoint', 'average'] | int):
@@ -153,22 +167,17 @@ class SquareMarcher():
     def _generate_noisemap(self, z: NumericType,
                            speed: Optional[NumericType] = None):
         if speed is None: speed = 1 / max(self._dim)
-        y = 0
         for i in range(self._dim[0]):
-            x = 0
             for j in range(self._dim[1]):
-                value = self._noise_model.get_value(x, y, z)
-                x += speed
-
+                value = self._noise_module.get_value(i * speed, j * speed, z)
                 self._grid[i, j] = value
-            y += speed
 
     def _initialize_grid(self):
-        self._grid = np.zeros(self._dim, dtype=float)
+        self._grid = np.zeros(self._dim, dtype=np.float64)
 
 
     def run(self,
-        ax: Optional[Axes],
+        ax: Axes,
         z: Optional[NumericType] = None,
         speed: Optional[NumericType] = None, *,
         line_color: ColorType = (1, 1, .5608),
@@ -180,7 +189,7 @@ class SquareMarcher():
         Run Marching Squares on a Perlin noisemap generated with the current configuration.
 
         ## Parameters:
-        ``ax: matplotlib.axes.Axes | None``
+        ``ax: matplotlib.axes.Axes``
             
             a ``matplotlib.axes.Axes`` object to plot on.
         
@@ -257,7 +266,6 @@ class SquareMarcher():
             return ax, lines 
         else:
             return ax, None
-        
 
 class PerlinMarcher(SquareMarcher):
     """
@@ -276,7 +284,9 @@ class PerlinMarcher(SquareMarcher):
     ):
         """
         Initialize PerlinMarcher object. This is a Marching Squares algorithm that runs\
-            on a noisemap generated with 3d Perline Noise.
+            on a noisemap generated with 3D Perlin Noise.\\
+        For information on modifying the Noise Generator, see the pynoise's documention:\
+            https://pynoise.readthedocs.io/en/latest/tutorial4.html
 
         ## Parameters:
         ``dimension: tuple[int, int]``
@@ -301,6 +311,30 @@ class PerlinMarcher(SquareMarcher):
             whether or not to use linear interpolation to find the endpoint of the contour lines.\
                 Using linear interpolation will lead to smoother contour lines along regions. This\
                 defaults to False.
+
+        ``frequency: NumericType``
+
+            From the docs: `"The frequency determines how many changes along a unit length.\
+                Increasing the frequency adds to the number of interesting features\
+                in the noise, which also making each feature smaller\
+                as more are packed into a given area."`
+
+        ``lacunarity: NumericType``
+
+            lacunarity affects the smoothness of the noisemap. For higher values, the noisemap\
+                generally have a finer, coarser grain texture, with small features sticking out.
+
+        ``octaves: int``
+
+            this is how many times the noise are summed up. Like lacunarity, this gives rougher\
+                texture for higher values. However, this parameter is also dependent on ``persistence``.
+
+        ``persistence: NumericType``
+
+            Persistence can be used to control the effect of ``octaves``. With values less than 1,\
+                the persistence mitigate effects of passes from later octaves.\\
+            From the docs: `"Persistence determines how quickly the amplitudes decrease between\
+                each octave..."`
 
         ## Raises
         Various TypeError and ValueError if you didn't read the docstring carefully.
@@ -319,48 +353,76 @@ class PerlinMarcher(SquareMarcher):
             raise ValueError('octaves must be a positive int')
         if not isinstance(persistence, NumericType):
             raise TypeError('persistence must be an int or float')
-        noise_model = Perlin(frequency, lacunarity, octaves, persistence, seed)
+        noise_module = Perlin(frequency, lacunarity, octaves, persistence, seed)
 
-        super().__init__(dimension, noise_model, seed, threshold_method, lerping)
+        super().__init__(dimension, noise_module, seed, threshold_method, lerping)
+        self._noise_module: Perlin
 
     
     @property
     def frequency(self) -> NumericType:
-        return self._noise_model.frequency
+        """
+        From pynoise's documentation:\
+        
+            `"The frequency determines how many changes along a unit length.\
+            Increasing the frequency adds to the number of interesting features\
+            in the noise, which also making each feature smaller\
+            as more are packed into a given area."`
+        """
+        return self._noise_module.frequency
     @frequency.setter
     def frequency(self, value: NumericType):
         if not isinstance(value, NumericType):
             raise TypeError('frequency must be an int or float')
-        self._noise_model.frequency = value
+        self._noise_module.frequency = value
 
     @property
     def lacunarity(self) -> NumericType:
-        return self._noise_model.lacunarity
+        """
+        lacunarity affects the smoothness of the noisemap. For higher values, the noisemap\
+                generally have a finer, coarser grain texture, with small features sticking out.
+        """
+        return self._noise_module.lacunarity
     @lacunarity.setter
     def lacunarity(self, value: NumericType):
         if not isinstance(value, NumericType):
             raise TypeError('lacunarity must be an int or float')
-        self._noise_model.lacunarity = value
-
-    @property
-    def persistence(self) -> NumericType:
-        return self._noise_model.persistence
-    @persistence.setter
-    def persistence(self, value: NumericType):
-        if not isinstance(value, NumericType):
-            raise TypeError('persistence must be an int or float')
-        self._noise_model.persistence = value
+        self._noise_module.lacunarity = value
 
     @property
     def octaves(self) -> int:
-        return self._noise_model.octaves
+        """
+        this is how many times the noise are summed up. Like lacunarity, this gives rougher\
+                texture for higher values. However, this parameter is also dependent on ``persistence``.
+        """
+        return self._noise_module.octaves
     @octaves.setter
     def octaves(self, value: int):
         if not isinstance(value, int):
             raise TypeError('octaves must be a positive int')
         elif value < 1:
             raise ValueError('octaves must be a positive int')
-        self._noise_model.octaves = value
+        self._noise_module.octaves = value
+
+    @property
+    def persistence(self) -> NumericType:
+        """
+        Persistence can be used to control the effect of ``octaves``. With values less than 1,\
+                the persistence mitigate effects of passes from later octaves.\\
+        From the docs: `"Persistence determines how quickly the amplitudes decrease between\
+            each octave..."`
+        """
+        return self._noise_module.persistence
+    @persistence.setter
+    def persistence(self, value: NumericType):
+        if not isinstance(value, NumericType):
+            raise TypeError('persistence must be an int or float')
+        self._noise_module.persistence = value
+
+    @SquareMarcher.seed.setter
+    def seed(self, value: int):
+        SquareMarcher.seed.fset(self, value)
+        self._noise_module.seed = value
 
 class VoronoiMarcher(SquareMarcher):
     """
@@ -378,8 +440,8 @@ class VoronoiMarcher(SquareMarcher):
                  frequency: NumericType = 1
     ):
         """
-        Initialize SquareMarcher object. This is a Marching Squares algorithm that runs\
-            on a noisemap generated with 3d Perline Noise.
+        Initialize VoronoiMarcher object. This is a Marching Squares algorithm that runs\
+            on a noisemap generated with 3D Voronoi Noise.
 
         ## Parameters:
         ``dimension: tuple[int, int]``
@@ -405,6 +467,22 @@ class VoronoiMarcher(SquareMarcher):
                 Using linear interpolation will lead to smoother contour lines along regions. This\
                 defaults to False.
 
+        ``displacement: NumericType``
+
+            this determines how large or small the range of values each seed can take on.\
+                Every seed is assigned a random value +/- ``displacement``
+
+        ``enable_distance: bool``
+
+            whether or not the information on the distance to the nearest seed is included in\
+                each point. If ``True``, each point in the Voronoi cells will increase in value\
+                the further the distance to the nearest seed gets.
+
+        ``frequency: NumericType``
+
+            this changes the distance between each seed placed in the grid. The higher the values\
+                the closer the seeds are placed.
+
         ## Raises
         Various TypeError and ValueError if you didn't read the docstring carefully.
         """
@@ -418,34 +496,53 @@ class VoronoiMarcher(SquareMarcher):
             raise TypeError('enable_distance must be a bool')
         if not isinstance(displacement, NumericType):
             raise TypeError('displacement must be an int or float')
-        noise_model = Voronoi(displacement, enable_distance, frequency)
+        noise_module = Voronoi(displacement, enable_distance, frequency)
 
-        super().__init__(dimension, noise_model, seed, threshold_method, lerping)
+        super().__init__(dimension, noise_module, seed, threshold_method, lerping)
+        self._noise_module: Voronoi
 
     
     @property
     def frequency(self) -> NumericType:
-        return self._noise_model.frequency
+        """
+        this changes the distance between each seed placed in the grid. The higher the values\
+                the closer the seeds are placed.
+        """
+        return self._noise_module.frequency
     @frequency.setter
     def frequency(self, value: NumericType):
         if not isinstance(value, NumericType):
             raise TypeError('frequency must be an int or float')
-        self._noise_model.frequency = value
+        self._noise_module.frequency = value
     
     @property
     def enable_distance(self) -> bool:
-        return self._noise_model.enable_distance
+        """
+        whether or not the information on the distance to the nearest seed is included in\
+            each point. If ``True``, each point in the Voronoi cells will increase in value\
+            the further the distance to the nearest seed gets.
+        """
+        return self._noise_module.enable_distance
     @enable_distance.setter
     def enable_distance(self, value: bool):
         if not isinstance(value, bool):
             raise TypeError('enable_distance must be a bool')
-        self._noise_model.enable_distance = value
+        self._noise_module.enable_distance = value
 
     @property
     def displacement(self) -> NumericType:
-        return self._noise_model.displacement
+        """
+        this determines how large or small the range of values each seed can take on.\
+            Every seed is assigned a random value +/- ``displacement``
+        """
+        return self._noise_module.displacement
     @displacement.setter
     def displacement(self, value: NumericType):
         if not isinstance(value, NumericType):
             raise TypeError('displacement must be an int or float')
-        self._noise_model.displacement = value
+        self._noise_module.displacement = value
+
+    @SquareMarcher.seed.setter
+    def seed(self, value: int):
+        SquareMarcher.seed.fset(self, value)
+        self._noise_module.seed = value
