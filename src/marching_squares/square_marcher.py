@@ -19,11 +19,7 @@ from matplotlib.colors import Colormap
 from matplotlib.image import AxesImage
 from matplotlib.lines import Line2D
 from matplotlib.typing import ColorType
-from marching_squares import (
-    NoiseModule,
-    NoiseModuleType,
-    NumericType,
-)
+from marching_squares import NumericType
 from typing import (
     Literal,
     Optional,
@@ -38,16 +34,11 @@ class SquareMarcher():
         '_dim',
         '_grid',
         '_lerping',
-        '_noise_module',
-        '_prng',
         '_qth',
-        '_seed',
         '_thres_method',
     )
     def __init__(self,
                  dimension: tuple[int, int],
-                 noise_module: NoiseModuleType,
-                 seed: Optional[int] = None,
                  threshold_method: Literal['midpoint', 'average'] | int = 'midpoint',
                  lerping: bool = False,
     ):
@@ -59,11 +50,6 @@ class SquareMarcher():
         ``dimension: tuple[int, int]``
 
             the dimension of the noisemap in pixels.
-
-        ``noise_module: pynoise.noisemodule.NoiseModule``
-
-            the noise module to use for generating noisemap. This should be a subclass\
-                of the base class pynoise.noisemodule.NoiseModule
 
         ``seed: Optional[int]``
 
@@ -91,12 +77,6 @@ class SquareMarcher():
             raise TypeError('Dimension must be a tuple of two ints.')
         elif len(dimension) != 2 or any((not isinstance(num, int) or num < 1) for num in dimension):
             raise ValueError("'dimension' must be a tuple of two positive integers")
-        if not isinstance(noise_module, NoiseModule):
-            raise TypeError('Noise module must be subclass of pynoise.noismodule.NoiseModule')
-        if seed is None:
-            seed = random.randint(0, sys.maxsize)
-        elif not isinstance(seed, int):
-            raise TypeError('Random seed must be an int')
         if isinstance(threshold_method, int):
             if threshold_method > 100 or threshold_method < 0:
                 raise ValueError('Percentage of percentile must be in the range [0, 100]')
@@ -112,9 +92,6 @@ class SquareMarcher():
         self._lerping = lerping
         
         self._initialize_grid()
-        self._seed = seed
-        self._prng = random.Random(seed)
-        self._noise_module = noise_module
 
     
     @property
@@ -143,16 +120,6 @@ class SquareMarcher():
         self._lerping = value
 
     @property
-    def seed(self) -> int:
-        return self._seed
-    @seed.setter
-    def seed(self, value: int):
-        if not isinstance(value, int):
-            raise TypeError('seed must be an int')
-        self._seed = value
-        self._prng.seed(self._seed)
-
-    @property
     def threshold_method(self) -> Literal['midpoint', 'average', 'percentile']:
         return self._thres_method
     @threshold_method.setter
@@ -167,13 +134,8 @@ class SquareMarcher():
         self._thres_method = value
 
 
-    def _generate_noisemap(self, z: NumericType,
-                           speed: Optional[NumericType] = None):
-        if speed is None: speed = 1 / max(self._dim)
-        for i in range(self._dim[0]):
-            for j in range(self._dim[1]):
-                value = self._noise_module.get_value(i * speed, j * speed, z)
-                self._grid[i, j] = value
+    def _generate_scalar_field(self, *args):
+        raise NotImplementedError('_generate_scalar_field() not implemented')
 
     def _initialize_grid(self):
         self._grid = np.zeros(self._dim, dtype=np.float64)
@@ -181,8 +143,7 @@ class SquareMarcher():
 
     def run(self,
         ax: Axes,
-        z: Optional[NumericType] = None,
-        speed: Optional[NumericType] = None, *,
+        *generate_args,
         line_color: ColorType = (1, 1, .5608),
         cmap: str | Colormap = 'Greys',
         dot_marker: str = 'o',
@@ -237,8 +198,7 @@ class SquareMarcher():
         A tuple of ``matplotlib.axes.Axes`` and optional list of ``matplotlib.artist.Artists``\
             if ``animated=True``.
         """
-        if z is None: z = self._prng.random()
-        self._generate_noisemap(z, speed)
+        self._generate_scalar_field(*generate_args)
 
         if self._thres_method == 'midpoint':
             threshold = (self._grid.max() + self._grid.min()) / 2
@@ -246,6 +206,9 @@ class SquareMarcher():
             threshold = self._grid.mean()
         elif self._thres_method == 'percentile':
             threshold = np.percentile(self._grid, self._qth)
+
+        contours = draw_contours(self._grid, threshold, lerp=self._lerping)
+
 
         ax.set_xlim(0, self._dim[1] - 1)
         ax.set_ylim(self._dim[0] - 1, 0)
@@ -262,7 +225,7 @@ class SquareMarcher():
         else:
             ax_img = ax.imshow(self._grid, cmap=cmap, animated=animated)
 
-        lines = ax.plot(*draw_contours(self._grid, threshold, lerp=self._lerping),
+        lines = ax.plot(*contours,
                         color=line_color, animated=animated)
         if animated:
             lines.append(ax_img)
@@ -274,7 +237,10 @@ class PerlinMarcher(SquareMarcher):
     """
     This class uses 3D Perlin Noise to generate a noisemap and then run Marching Squares on the noisemap.
     """
-    __slots__ = ()
+    __slots__ = (
+        '_noise_module',
+        '_prng'
+    )
     def __init__(self,
                  dimension: tuple[int, int],
                  seed: Optional[int] = None,
@@ -342,6 +308,8 @@ class PerlinMarcher(SquareMarcher):
         ## Raises
         Various TypeError and ValueError if you didn't read the docstring carefully.
         """
+        super().__init__(dimension, threshold_method, lerping)
+
         if seed is None:
             seed = random.randint(0, sys.maxsize)
         elif not isinstance(seed, int):
@@ -356,10 +324,9 @@ class PerlinMarcher(SquareMarcher):
             raise ValueError('octaves must be a positive int')
         if not isinstance(persistence, NumericType):
             raise TypeError('persistence must be an int or float')
-        noise_module = Perlin(frequency, lacunarity, octaves, persistence, seed)
 
-        super().__init__(dimension, noise_module, seed, threshold_method, lerping)
-        self._noise_module: Perlin
+        self._noise_module = Perlin(frequency, lacunarity, octaves, persistence, seed)
+        self._prng = random.Random(seed)
 
     
     @property
@@ -422,17 +389,34 @@ class PerlinMarcher(SquareMarcher):
             raise TypeError('persistence must be an int or float')
         self._noise_module.persistence = value
 
-    @SquareMarcher.seed.setter
+    @property
+    def seed(self) -> int:
+        return self._noise_module.seed
+    @seed.setter
     def seed(self, value: int):
-        SquareMarcher.seed.fset(self, value)
+        if not isinstance(value, int):
+            raise TypeError('seed must be an int')
         self._noise_module.seed = value
+        self._prng.seed(value)
+
+    def _generate_scalar_field(self, z: Optional[NumericType] = None,
+                               speed: Optional[NumericType] = None):
+        if z is None: z = self._prng.random() * 100
+        if speed is None: speed = 1 / max(self._dim)
+        for i in range(self._dim[0]):
+            for j in range(self._dim[1]):
+                value = self._noise_module.get_value(i * speed, j * speed, z)
+                self._grid[i, j] = value
 
 class VoronoiMarcher(SquareMarcher):
     """
     This is a class wrapper for the Marching Squares algorithm running on a randomly generated noisemap\
         using 3D Voronoi Noise.
     """
-    __slots__ = ()
+    __slots__ = (
+        '_noise_module',
+        '_prng'
+    )
     def __init__(self,
                  dimension: tuple[int, int],
                  seed: Optional[int] = None,
@@ -489,6 +473,8 @@ class VoronoiMarcher(SquareMarcher):
         ## Raises
         Various TypeError and ValueError if you didn't read the docstring carefully.
         """
+        super().__init__(dimension, threshold_method, lerping)
+
         if seed is None:
             seed = random.randint(0, sys.maxsize)
         elif not isinstance(seed, int):
@@ -499,10 +485,9 @@ class VoronoiMarcher(SquareMarcher):
             raise TypeError('enable_distance must be a bool')
         if not isinstance(displacement, NumericType):
             raise TypeError('displacement must be an int or float')
-        noise_module = Voronoi(displacement, enable_distance, frequency)
 
-        super().__init__(dimension, noise_module, seed, threshold_method, lerping)
-        self._noise_module: Voronoi
+        self._noise_module = Voronoi(displacement, enable_distance, frequency)
+        self._prng = random.Random(seed)
 
     
     @property
@@ -545,13 +530,31 @@ class VoronoiMarcher(SquareMarcher):
             raise TypeError('displacement must be an int or float')
         self._noise_module.displacement = value
 
-    @SquareMarcher.seed.setter
+    @property
+    def seed(self) -> int:
+        return self._noise_module.seed
+    @seed.setter
     def seed(self, value: int):
-        SquareMarcher.seed.fset(self, value)
+        if not isinstance(value, int):
+            raise TypeError('seed must be an int')
         self._noise_module.seed = value
+        self._prng.seed(value)
+
+    def _generate_scalar_field(self, z: Optional[NumericType] = None,
+                               speed: Optional[NumericType] = None):
+        if z is None: z = self._prng.random() * 100
+        if speed is None: speed = 1 / max(self._dim)
+        for i in range(self._dim[0]):
+            for j in range(self._dim[1]):
+                value = self._noise_module.get_value(i * speed, j * speed, z)
+                self._grid[i, j] = value
 
 class OpenSimplexMarcher(SquareMarcher):
-    __slots__ = '_xs', '_ys'
+    __slots__ = (
+        '_prng',
+        '_xs',
+        '_ys'
+    )
     def __init__(self,
                  dimension: tuple[int, int],
                  seed = None,
@@ -559,25 +562,28 @@ class OpenSimplexMarcher(SquareMarcher):
                  lerping: bool = False):
         if opensimplex is None:
             raise ImportError('Could not import opensimplex library, this could be because the library has not beend installed')
+        super().__init__(dimension, threshold_method, lerping)
         
         if seed is None:
             seed = random.randint(0, sys.maxsize)
         elif not isinstance(seed, int):
             raise TypeError('Random seed must be an int')
         opensimplex.seed(seed)
-        super().__init__(dimension, NoiseModule(), seed, threshold_method, lerping)
+        self._prng = random.Random(seed)
 
-    @SquareMarcher.seed.setter
+    @property
+    def seed(self) -> int:
+        return opensimplex.get_seed()
+    @seed.setter
     def seed(self, value: int):
-        if seed is None:
-            seed = random.randint(0, sys.maxsize)
-        elif not isinstance(seed, int):
-            raise TypeError('Random seed must be an int')
-        self._seed = value
-        opensimplex.seed(seed)
+        if not isinstance(value, int):
+            raise TypeError('seed must be an int')
+        opensimplex.seed(value)
 
-    def _generate_noisemap(self, z: NumericType,
-                           speed = None):
+
+    def _generate_scalar_field(self, z: Optional[NumericType] = None,
+                               speed: Optional[NumericType] = None):
+        if z is None: z = self._prng.random() * 100
         if speed is None: speed = 1 / max(self._dim)
 
         xs = self._xs * speed
