@@ -2,6 +2,9 @@ import random, sys
 
 import numpy as np
 
+try: import opensimplex
+except ImportError: opensimplex = None
+
 from pynoise.noisemodule import (
     Perlin,
     Voronoi
@@ -546,3 +549,44 @@ class VoronoiMarcher(SquareMarcher):
     def seed(self, value: int):
         SquareMarcher.seed.fset(self, value)
         self._noise_module.seed = value
+
+class OpenSimplexMarcher(SquareMarcher):
+    __slots__ = '_xs', '_ys'
+    def __init__(self,
+                 dimension: tuple[int, int],
+                 seed = None,
+                 threshold_method: Literal['midpoint', 'average'] | int = 'midpoint',
+                 lerping: bool = False):
+        if opensimplex is None:
+            raise ImportError('Could not import opensimplex library, this could be because the library has not beend installed')
+        
+        if seed is None:
+            seed = random.randint(0, sys.maxsize)
+        elif not isinstance(seed, int):
+            raise TypeError('Random seed must be an int')
+        opensimplex.seed(seed)
+        super().__init__(dimension, NoiseModule(), seed, threshold_method, lerping)
+
+    @SquareMarcher.seed.setter
+    def seed(self, value: int):
+        if seed is None:
+            seed = random.randint(0, sys.maxsize)
+        elif not isinstance(seed, int):
+            raise TypeError('Random seed must be an int')
+        self._seed = value
+        opensimplex.seed(seed)
+
+    def _generate_noisemap(self, z: NumericType,
+                           speed = None):
+        if speed is None: speed = 1 / max(self._dim)
+
+        xs = self._xs * speed
+        ys = self._ys * speed
+        zs = np.array([z], dtype=np.float64)
+
+        self._grid = opensimplex.noise3array(xs, ys, zs)[0]
+
+    def _initialize_grid(self):
+        self._xs = np.arange(self._dim[1], dtype=np.float64)
+        self._ys = np.arange(self._dim[0], dtype=np.float64)
+        
