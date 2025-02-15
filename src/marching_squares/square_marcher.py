@@ -1,7 +1,6 @@
 import random, sys
 
 import numpy as np
-
 try: import opensimplex
 except ImportError: opensimplex = None
 
@@ -220,17 +219,21 @@ class SquareMarcher():
             ax.get_figure().set_facecolor('0.7')
             for i, row in enumerate(color_mat):
                 for j, val in enumerate(row):
-                    ax.plot([j], [i], dot_marker, color=str(val), mec='0',
-                            animated=animated)
+                    ax.add_line(Line2D([j], [i], color=str(val), marker=dot_marker, markeredgecolor='0'))
         else:
-            ax_img = ax.imshow(self._grid, cmap=cmap, animated=animated)
+            ax_img = AxesImage(ax, cmap=cmap, extent=(-.5, self._dim[1] - .5,
+                                                      self._dim[0] -.5, -.5))
+            ax_img.set_data(self._grid)
+            ax.add_image(ax_img)
+        for i in range(0, len(contours), 2):
+            ax.add_line(Line2D(contours[i], contours[i + 1], color=line_color))
 
-        lines = ax.plot(*contours,
-                        color=line_color, animated=animated)
         if animated:
+            lines = list(ax.lines)
             lines.append(ax_img)
-            return ax, lines 
+            return ax, lines
         else:
+            ax.get_figure().canvas.draw()
             return ax, None
 
 class PerlinMarcher(SquareMarcher):
