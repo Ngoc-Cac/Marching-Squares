@@ -1,5 +1,9 @@
+import numpy as np
+
+from matplotlib.image import imread
 from matplotlib.pyplot import figure
 
+from marching_squares.algo import draw_contours
 from marching_squares.square_marcher import SquareMarcher
 
 # These are typing stuff and are not involved in the code
@@ -8,10 +12,13 @@ from matplotlib.image import AxesImage
 from matplotlib.lines import Line2D
 from marching_squares import NumericType
 from typing import (
+    Literal,
     Optional,
     overload
 )
 
+
+_GRAYSCALE_COEFS = 0.2989, 0.5870, 0.1140
 
 @overload
 def generate_frames(
@@ -148,3 +155,65 @@ def generate_frames(
     ax.axis('off')
     frames = [square_marcher.run(ax, z, speed, animated=True)[1] for z in zs]
     return fig, frames
+
+
+@overload
+def contours_from_image(
+    filepath: str,
+    threshold: Literal['midpoint', 'average'] = 'midpoint',
+    lerping: bool = True
+):
+    """
+    """
+@overload
+def contours_from_image(
+    filepath: str,
+    threshold: int,
+    lerping: bool = True
+):
+    """
+    """
+@overload
+def contours_from_image(
+    filepath: str,
+    threshold: float,
+    lerping: bool = True
+):
+    """
+    """
+
+def contours_from_image(
+    filepath: str,
+    threshold: Literal['midpoint', 'average'] | int | float = 'midpoint',
+    lerping: bool = True
+) -> tuple[np.ndarray, list[tuple[float, float]]]:
+    if not isinstance(filepath, str):
+        raise TypeError('filepath must be a string')
+    if not isinstance(lerping, bool):
+        raise TypeError('lerping must be a bool')
+    if isinstance(threshold, str):
+        if not threshold in ('midpoint', 'average'):
+            raise ValueError("threshold must be a string literal of 'midpoint' or 'average'")
+    elif isinstance(threshold, int):
+        if threshold > 100 or threshold < 0:
+            raise ValueError('threshold must be an int between 0 and 100 if percentile is used')
+        threshold_value = threshold
+        threshold = 'percentile'
+    elif isinstance(threshold, float):
+        if threshold > 1 or threshold < 0:
+            raise ValueError('If custom threshold is used, threshold value must be between 0 and 1')
+        threshold_value = threshold
+        threshold = 'custom'
+    else: raise TypeError('Unrecognised type for threshold argument')
+
+    rgb_img = imread(filepath) / 255
+    grayscale = np.dot(rgb_img[...,:3], _GRAYSCALE_COEFS)
+
+    if threshold == 'midpoint':
+        threshold_value = (grayscale.min() + grayscale.max()) / 2
+    elif threshold == 'average':
+        threshold_value = grayscale.mean()
+    elif threshold == 'percentile':
+        threshold_value = np.percentile(grayscale, threshold_value)
+
+    return grayscale, draw_contours(grayscale, threshold_value, lerping)
