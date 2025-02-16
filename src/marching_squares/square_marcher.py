@@ -4,6 +4,8 @@ import numpy as np
 try: import opensimplex
 except ImportError: opensimplex = None
 
+from matplotlib.image import AxesImage
+from matplotlib.lines import Line2D
 from pynoise.noisemodule import (
     Perlin,
     Voronoi
@@ -15,8 +17,6 @@ from marching_squares.algo import draw_contours
 from numpy.typing import NDArray
 from matplotlib.axes import Axes
 from matplotlib.colors import Colormap
-from matplotlib.image import AxesImage
-from matplotlib.lines import Line2D
 from matplotlib.typing import ColorType
 from marching_squares import NumericType
 from typing import (
@@ -133,8 +133,8 @@ class SquareMarcher():
         self._thres_method = value
 
 
-    def _generate_scalar_field(self, *args):
-        raise NotImplementedError('_generate_scalar_field() not implemented')
+    def generate_scalar_field(self, *args):
+        raise NotImplementedError('generate_scalar_field() not implemented')
 
     def _initialize_grid(self):
         self._grid = np.zeros(self._dim, dtype=np.float64)
@@ -197,7 +197,8 @@ class SquareMarcher():
         A tuple of ``matplotlib.axes.Axes`` and optional list of ``matplotlib.artist.Artists``\
             if ``animated=True``.
         """
-        self._generate_scalar_field(*generate_args)
+        if len(generate_args):
+            self.generate_scalar_field(*generate_args)
 
         if self._thres_method == 'midpoint':
             threshold = (self._grid.max() + self._grid.min()) / 2
@@ -402,7 +403,7 @@ class PerlinMarcher(SquareMarcher):
         self._noise_module.seed = value
         self._prng.seed(value)
 
-    def _generate_scalar_field(self, z: Optional[NumericType] = None,
+    def generate_scalar_field(self, z: Optional[NumericType] = None,
                                speed: Optional[NumericType] = None):
         if z is None: z = self._prng.random() * 100
         if speed is None: speed = 1 / max(self._dim)
@@ -543,7 +544,7 @@ class VoronoiMarcher(SquareMarcher):
         self._noise_module.seed = value
         self._prng.seed(value)
 
-    def _generate_scalar_field(self, z: Optional[NumericType] = None,
+    def generate_scalar_field(self, z: Optional[NumericType] = None,
                                speed: Optional[NumericType] = None):
         if z is None: z = self._prng.random() * 100
         if speed is None: speed = 1 / max(self._dim)
@@ -584,7 +585,7 @@ class OpenSimplexMarcher(SquareMarcher):
         opensimplex.seed(value)
 
 
-    def _generate_scalar_field(self, z: Optional[NumericType] = None,
+    def generate_scalar_field(self, z: Optional[NumericType] = None,
                                speed: Optional[NumericType] = None):
         if z is None: z = self._prng.random() * 100
         if speed is None: speed = 1 / max(self._dim)
@@ -596,6 +597,6 @@ class OpenSimplexMarcher(SquareMarcher):
         self._grid = opensimplex.noise3array(xs, ys, zs)[0]
 
     def _initialize_grid(self):
+        super()._initialize_grid()
         self._xs = np.arange(self._dim[1], dtype=np.float64)
         self._ys = np.arange(self._dim[0], dtype=np.float64)
-        
