@@ -361,7 +361,7 @@ class PerlinMarcher(SquareMarcher):
 
 class VoronoiMarcher(SquareMarcher):
     """
-    This is a class wrapper for the Marching Squares algorithm running on a randomly generated noisemap\
+    This is a class wrapper for the Marching Squares algorithm running on a randomly generated noisemap
         using 3D Voronoi Noise.
     """
     __slots__ = (
@@ -369,60 +369,39 @@ class VoronoiMarcher(SquareMarcher):
         '_prng'
     )
     def __init__(self,
-                 dimension: tuple[int, int],
-                 seed: Optional[int] = None,
-                 threshold_method: Literal['midpoint', 'average'] | int = 'midpoint',
-                 lerping: bool = False,
-                 displacement: NumericType = 1,
-                 enable_distance: bool = False,
-                 frequency: NumericType = 1
+        dimension: tuple[int, int],
+        seed: Optional[int] = None,
+        threshold_method: Literal['midpoint', 'average'] | int = 'midpoint',
+        lerping: bool = False,
+        displacement: NumericType = 1,
+        enable_distance: bool = False,
+        frequency: NumericType = 1
     ):
         """
-        Initialize VoronoiMarcher object. This is a Marching Squares algorithm that runs\
-            on a noisemap generated with 3D Voronoi Noise.
+        Initialize VoronoiMarcher object. This is a Marching Squares algorithm that runs
+        on a noisemap generated with 3D Voronoi Noise.
 
-        ## Parameters:
-        ``dimension: tuple[int, int]``
 
-            the dimension of the noisemap in pixels.
-
-        ``seed: Optional[int]``
-
-            the seed for any prng used by the SquareMarcher, including the Perlin Noise generator.\
-                This defaults to None and a random seed will be generated
-
-        ``threshold_method: Literal['midpoint', 'average'] | int``
-
-            the thresholding method to use on the noisemap. This defaults to ``'midpoint'`` and \
-                the mid-range value betwen the max and min value in the noise map will use.\\
-            If ``'average'`` is specified instead, the arithmetic mean across all values will be used.\\
-            An integer ``q`` in the range [0, 100] can be specified as well, in which case,\
-                the q-th percentile will be used as the threshold.
-
-        ``lerping: bool``
-
-            whether or not to use linear interpolation to find the endpoint of the contour lines.\
-                Using linear interpolation will lead to smoother contour lines along regions. This\
-                defaults to False.
-
-        ``displacement: NumericType``
-
-            this determines how large or small the range of values each seed can take on.\
-                Every seed is assigned a random value +/- ``displacement``
-
-        ``enable_distance: bool``
-
-            whether or not the information on the distance to the nearest seed is included in\
-                each point. If ``True``, each point in the Voronoi cells will increase in value\
-                the further the distance to the nearest seed gets.
-
-        ``frequency: NumericType``
-
-            this changes the distance between each seed placed in the grid. The higher the values\
-                the closer the seeds are placed.
-
-        ## Raises
-        Various TypeError and ValueError if you didn't read the docstring carefully.
+        :param tuple[int, int] dimension: The dimension of the noisemap in pixels.
+        :param int, optional seed: The seed for any prng used by the SquareMarcher,
+            including the Perlin Noise generator. This defaults to None and a random
+            seed will be generated
+        :param Literal['midpoint', 'average'] or int threshold_method: the thresholding
+            method to use on the noisemap. This defaults to `'midpoint'` and the mid-range
+            value betwen the max and min value in the noise map will use. If `'average'` is
+            specified instead, the arithmetic mean across all values will be used. An integer
+            `q` in the range [0, 100] can be specified as well, in which case, the q-th percentile
+            will be used as the threshold.
+        :param bool lerping: Whether or not to use linear interpolation to find the endpoint of
+            the contour lines. Using linear interpolation will lead to smoother contour lines
+            along regions. This defaults to `False`.
+        :param int or float displacement: This determines how large or small the range of values
+            each seed can take on. Every seed is assigned a random value +/- `displacement`
+        :param bool enable_distance: Whether or not the information on the distance to the nearest
+            seed is included in each point. If `True`, each point in the Voronoi cells will increase
+            in value the further the distance to the nearest seed gets.
+        :param int or float frequency: This changes the distance between each seed placed in the grid.
+            The higher the values the closer the seeds are placed.
         """
         super().__init__(dimension, threshold_method, lerping)
 
@@ -444,8 +423,8 @@ class VoronoiMarcher(SquareMarcher):
     @property
     def frequency(self) -> NumericType:
         """
-        this changes the distance between each seed placed in the grid. The higher the values\
-                the closer the seeds are placed.
+        This changes the distance between each seed placed in the grid. The higher the values
+        the closer the seeds are placed.
         """
         return self._noise_module.frequency
     @frequency.setter
@@ -457,9 +436,9 @@ class VoronoiMarcher(SquareMarcher):
     @property
     def enable_distance(self) -> bool:
         """
-        whether or not the information on the distance to the nearest seed is included in\
-            each point. If ``True``, each point in the Voronoi cells will increase in value\
-            the further the distance to the nearest seed gets.
+        whether or not the information on the distance to the nearest seed is included in
+        each point. If `True`, each point in the Voronoi cells will increase in value
+        the further the distance to the nearest seed gets.
         """
         return self._noise_module.enable_distance
     @enable_distance.setter
@@ -471,8 +450,8 @@ class VoronoiMarcher(SquareMarcher):
     @property
     def displacement(self) -> NumericType:
         """
-        this determines how large or small the range of values each seed can take on.\
-            Every seed is assigned a random value +/- ``displacement``
+        This determines how large or small the range of values each seed can take on.
+        Every seed is assigned a random value +/- `displacement`
         """
         return self._noise_module.displacement
     @displacement.setter
@@ -491,8 +470,10 @@ class VoronoiMarcher(SquareMarcher):
         self._noise_module.seed = value
         self._prng.seed(value)
 
-    def generate_scalar_field(self, z: Optional[NumericType] = None,
-                               speed: Optional[NumericType] = None):
+    def generate_scalar_field(self,
+        z: Optional[NumericType] = None,
+        speed: Optional[NumericType] = None
+    ):
         if z is None: z = self._prng.random() * 100
         if speed is None: speed = 1 / max(self._dim)
         for i in range(self._dim[0]):
