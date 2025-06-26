@@ -31,43 +31,28 @@ def generate_frames(
     fig: Optional[Figure] = None
 ) -> tuple[Figure, list[list[AxesImage, Line2D]]]:
     """
-    Utility function for creating frames to be used in ``matplotlib.animation.ArtistAnimation``.
-    The frames will be created from a z value starting at ``z_start`` and incrementnig by ``z_speed``\
-        for each ``frame_counts``.
+    Utility function for creating frames to be used in
+    `matplotlib.animation.ArtistAnimation`. The frames will be created
+    from a z value starting at `z_start` and incrementnig by `z_speed`
+    for each `frame_counts`.
 
-    ## Parameters:
-    ``square_marcher: SquareMarcher``
-    
-        a ``SquareMarcher`` object already configured to be run
 
-    ``speed: int | float``
+    :param SquareMarcher square_marcher: A `SquareMarcher` object already
+        configured to be run
+    :param int or float speed: The x and y speed when generting the noisemap.
+        Larger value of speed will cause the noisemap to be noisier.
+    :param int or float z_start: The starting z value.
+    :param int or float z_speed: The increment to go up by each frame.
+        For large increment, the change through each frame might be very chaotic.
+    :param int frame_counts: The number of frames in the animation, must be positive
+    :param matplotlib.figure.Figure, optional fig : The figure on which the animation
+        is drawn on. If None is given, a 6in x 6in `matplotlib.figure.Figure` is created.
 
-        the x and y speed when generting the nosimap. Larger value of speed will cause\
-            the noisemap to be noisier.
-
-    ``z_start: int | float``
-        
-        the starting z value
-
-    ``z_speed: int | float``
-        
-        the increment to go up by each frame. For large increment, the change through each frame\
-            might be very chaotic
-
-    ``frame_counts: int``
-        
-        the number of frames in the animation, must be positive
-
-    ``fig: matplotlib.figure.Figure | None``
-
-        the figure on which the animation is drawn on. If None is given,\
-            a 6in x 6in ``matplotlib.figure.Figure`` is created.
-
-    # Returns
-    The ``matplotlib.figure.Figure`` that was used to draw on and a list of lists\
-        of ``matplotlib.artist.Artist``. This list can be passed straight into a\
-        ``matplotlib.animation.ArtistAnimation``. Each sub-list of this list contains\
+    :return: The `matplotlib.figure.Figure` that was used to draw on and a list of lists
+        of `matplotlib.artist.Artist`. This list can be passed straight into a
+        `matplotlib.animation.ArtistAnimation`. Each sub-list of this list contains
         the artists to be drawn on that frame.
+    :rtype: tuple[Figure, list[list[AxesImage, Line2D]]]
     """
 @overload
 def generate_frames(
@@ -77,32 +62,22 @@ def generate_frames(
     fig: Optional[Figure] = None,
 ) -> tuple[Figure, list[list[AxesImage, Line2D]]]:
     """
-    Utility function for creating frames to be used in ``matplotlib.animation.ArtistAnimation``
+    Utility function for creating frames to be used in `matplotlib.animation.ArtistAnimation`
 
-    ## Parameters:
-    ``square_marcher: SquareMarcher``
     
-        a ``SquareMarcher`` object already configured to be run
+    :param SquareMarcher square_marcher: A `SquareMarcher` object already
+        configured to be run
+    :param int or float speed: The x and y speed when generting the noisemap.
+        Larger value of speed will cause the noisemap to be noisier.
+    :param int or float *zs: The z values on each frame used to generate the noisemap
+    :param matplotlib.figure.Figure, optional fig : The figure on which the animation
+        is drawn on. If None is given, a 6in x 6in `matplotlib.figure.Figure` is created.
 
-    ``speed: int | float``
-
-        the x and y speed when generting the nosimap. Larger value of speed will cause\
-            the noisemap to be noisier.
-
-    ``*zs: int | float``
-
-        the z values on each frame used to generate the noisemap
-
-    ``fig: matplotlib.figure.Figure | None``
-
-        the figure on which the animation is drawn on. If None is given,\
-            a 6in x 6in ``matplotlib.figure.Figure`` is created.
-
-    # Returns
-    The ``matplotlib.figure.Figure`` that was used to draw on and a list of lists\
-        of ``matplotlib.artist.Artist``. This list can be passed straight into a\
-        ``matplotlib.animation.ArtistAnimation``. Each sub-list of this list contains\
+    :return: The `matplotlib.figure.Figure` that was used to draw on and a list of lists
+        of `matplotlib.artist.Artist`. This list can be passed straight into a
+        `matplotlib.animation.ArtistAnimation`. Each sub-list of this list contains
         the artists to be drawn on that frame.
+    :rtype: tuple[Figure, list[list[AxesImage, Line2D]]]
     """
 
 def generate_frames(
