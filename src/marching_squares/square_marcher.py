@@ -216,71 +216,48 @@ class PerlinMarcher(SquareMarcher):
         '_prng'
     )
     def __init__(self,
-                 dimension: tuple[int, int],
-                 seed: Optional[int] = None,
-                 threshold_method: Literal['midpoint', 'average'] | int = 'midpoint',
-                 lerping: bool = False,
-                 frequency: NumericType = 1,
-                 lacunarity: NumericType = 2,
-                 octaves: int = 2,
-                 persistence: NumericType = 0.25
+        dimension: tuple[int, int],
+        seed: Optional[int] = None,
+        threshold_method: Literal['midpoint', 'average'] | int = 'midpoint',
+        lerping: bool = False,
+        frequency: NumericType = 1,
+        lacunarity: NumericType = 2,
+        octaves: int = 2,
+        persistence: NumericType = 0.25
     ):
         """
-        Initialize PerlinMarcher object. This is a Marching Squares algorithm that runs\
-            on a noisemap generated with 3D Perlin Noise.\\
-        For information on modifying the Noise Generator, see the pynoise's documention:\
-            https://pynoise.readthedocs.io/en/latest/tutorial4.html
+        Initialize PerlinMarcher object. This is a Marching Squares algorithm that runs
+        on a noisemap generated with 3D Perlin Noise.
+        For information on modifying the Noise Generator, see the pynoise's documention:
+        https://pynoise.readthedocs.io/en/latest/tutorial4.html
 
-        ## Parameters:
-        ``dimension: tuple[int, int]``
 
-            the dimension of the noisemap in pixels.
-
-        ``seed: Optional[int]``
-
-            the seed for any prng used by the SquareMarcher, including the Perlin Noise generator.\
-                This defaults to None and a random seed will be generated
-
-        ``threshold_method: Literal['midpoint', 'average'] | int``
-
-            the thresholding method to use on the noisemap. This defaults to ``'midpoint'`` and \
-                the mid-range value betwen the max and min value in the noise map will use.\\
-            If ``'average'`` is specified instead, the arithmetic mean across all values will be used.\\
-            An integer ``q`` in the range [0, 100] can be specified as well, in which case,\
-                the q-th percentile will be used as the threshold.
-
-        ``lerping: bool``
-
-            whether or not to use linear interpolation to find the endpoint of the contour lines.\
-                Using linear interpolation will lead to smoother contour lines along regions. This\
-                defaults to False.
-
-        ``frequency: NumericType``
-
-            From the docs: `"The frequency determines how many changes along a unit length.\
-                Increasing the frequency adds to the number of interesting features\
-                in the noise, which also making each feature smaller\
-                as more are packed into a given area."`
-
-        ``lacunarity: NumericType``
-
-            lacunarity affects the smoothness of the noisemap. For higher values, the noisemap\
-                generally have a finer, coarser grain texture, with small features sticking out.
-
-        ``octaves: int``
-
-            this is how many times the noise are summed up. Like lacunarity, this gives rougher\
-                texture for higher values. However, this parameter is also dependent on ``persistence``.
-
-        ``persistence: NumericType``
-
-            Persistence can be used to control the effect of ``octaves``. With values less than 1,\
-                the persistence mitigate effects of passes from later octaves.\\
-            From the docs: `"Persistence determines how quickly the amplitudes decrease between\
-                each octave..."`
-
-        ## Raises
-        Various TypeError and ValueError if you didn't read the docstring carefully.
+        :param tuple[int, int] dimension: The dimension of the noisemap in pixels.
+        :param int, optional seed: The seed for any prng used by the SquareMarcher,
+            including the Perlin Noise generator. This defaults to None and a random
+            seed will be generated
+        :param Literal['midpoint', 'average'] or int threshold_method: the thresholding
+            method to use on the noisemap. This defaults to `'midpoint'` and the mid-range
+            value betwen the max and min value in the noise map will use. If `'average'` is
+            specified instead, the arithmetic mean across all values will be used. An integer
+            `q` in the range [0, 100] can be specified as well, in which case, the q-th percentile
+            will be used as the threshold.
+        :param bool lerping: Whether or not to use linear interpolation to find the endpoint of
+            the contour lines. Using linear interpolation will lead to smoother contour lines
+            along regions. This defaults to `False`.
+        :param int or float frequency: From the docs: `"The frequency determines how many changes
+            along a unit length. Increasing the frequency adds to the number of interesting features
+            in the noise, which also making each feature smaller as more are packed into a given area."`
+        :param int or float lacunarity: Lacunarity affects the smoothness of the noisemap.
+            For higher values, the noisemap generally have a finer, coarser grain texture,
+            with small features sticking out.
+        :param int octave: This is how many times the noise are summed up. Like lacunarity,
+            this gives rougher texture for higher values. However, this parameter is also
+            dependent on `persistence`.
+        :param int or float persistence: Persistence can be used to control the effect of
+            `octaves`. With values less than 1, the persistence mitigate effects of passes
+            from later octaves. From the docs: `"Persistence determines how quickly the amplitudes
+            decrease between each octave..."`
         """
         super().__init__(dimension, threshold_method, lerping)
 
@@ -306,12 +283,10 @@ class PerlinMarcher(SquareMarcher):
     @property
     def frequency(self) -> NumericType:
         """
-        From pynoise's documentation:\
-        
-            `"The frequency determines how many changes along a unit length.\
-            Increasing the frequency adds to the number of interesting features\
-            in the noise, which also making each feature smaller\
-            as more are packed into a given area."`
+        From pynoise's documentation: `"The frequency determines how many
+        changes along a unit length. Increasing the frequency adds to the number
+        of interesting features in the noise, which also making each feature smaller
+        as more are packed into a given area."`
         """
         return self._noise_module.frequency
     @frequency.setter
@@ -323,8 +298,8 @@ class PerlinMarcher(SquareMarcher):
     @property
     def lacunarity(self) -> NumericType:
         """
-        lacunarity affects the smoothness of the noisemap. For higher values, the noisemap\
-                generally have a finer, coarser grain texture, with small features sticking out.
+        Lacunarity affects the smoothness of the noisemap. For higher values, the noisemap
+        generally have a finer, coarser grain texture, with small features sticking out.
         """
         return self._noise_module.lacunarity
     @lacunarity.setter
@@ -336,8 +311,8 @@ class PerlinMarcher(SquareMarcher):
     @property
     def octaves(self) -> int:
         """
-        this is how many times the noise are summed up. Like lacunarity, this gives rougher\
-                texture for higher values. However, this parameter is also dependent on ``persistence``.
+        This is how many times the noise are summed up. Like lacunarity, this gives rougher
+        texture for higher values. However, this parameter is also dependent on ``persistence``.
         """
         return self._noise_module.octaves
     @octaves.setter
@@ -351,10 +326,10 @@ class PerlinMarcher(SquareMarcher):
     @property
     def persistence(self) -> NumericType:
         """
-        Persistence can be used to control the effect of ``octaves``. With values less than 1,\
-                the persistence mitigate effects of passes from later octaves.\\
-        From the docs: `"Persistence determines how quickly the amplitudes decrease between\
-            each octave..."`
+        Persistence can be used to control the effect of ``octaves``. With values less than 1,
+        the persistence mitigate effects of passes from later octaves.
+        From the docs: `"Persistence determines how quickly the amplitudes decrease between
+        each octave..."`
         """
         return self._noise_module.persistence
     @persistence.setter
