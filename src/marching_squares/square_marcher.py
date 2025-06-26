@@ -24,10 +24,11 @@ from typing import (
     Optional,
 )
 
+
 class SquareMarcher():
     """
-    This is a class wrapper for the Marching Squares algorithm running on a randomly generated noisemap\
-        using 3D Noise Generator.
+    This is a class wrapper for the Marching Squares algorithm running on a randomly generated noisemap
+    using 3D Noise Generator.
     """
     __slots__ = (
         '_dim',
@@ -37,40 +38,28 @@ class SquareMarcher():
         '_thres_method',
     )
     def __init__(self,
-                 dimension: tuple[int, int],
-                 threshold_method: Literal['midpoint', 'average'] | int = 'midpoint',
-                 lerping: bool = False,
+        dimension: tuple[int, int],
+        threshold_method: Literal['midpoint', 'average'] | int = 'midpoint',
+        lerping: bool = False,
     ):
         """
-        Initialize SquareMarcher object. This is a Marching Squares algorithm that runs\
-            on a noisemap generated with 3d Gradient Noise Generator.
+        Initialize `SquareMarcher` object. This is a Marching Squares algorithm that runs
+        on a noisemap generated with 3d Gradient Noise Generator.
 
-        ## Parameters:
-        ``dimension: tuple[int, int]``
 
-            the dimension of the noisemap in pixels.
-
-        ``seed: Optional[int]``
-
-            the seed for any prng used by the SquareMarcher, including the Perlin Noise generator.\
-                This defaults to None and a random seed will be generated
-
-        ``threshold_method: Literal['midpoint', 'average'] | int``
-
-            the thresholding method to use on the noisemap. This defaults to ``'midpoint'`` and \
-                the mid-range value betwen the max and min value in the noise map will use.\\
-            If ``'average'`` is specified instead, the arithmetic mean across all values will be used.\\
-            An integer ``q`` in the range [0, 100] can be specified as well, in which case,\
-                the q-th percentile will be used as the threshold.
-
-        ``lerping: bool``
-
-            whether or not to use linear interpolation to find the endpoint of the contour lines.\
-                Using linear interpolation will lead to smoother contour lines along regions. This\
-                defaults to False.
-
-        ## Raises
-        Various TypeError and ValueError if you didn't read the docstring carefully.
+        :param tuple[int, int]: The dimension of the noisemap in pixels.
+        :param int, optional seed: The seed for any prng used by the `SquareMarcher`,
+            including the Perlin Noise generator. This defaults to `None` and a
+            random seed will be generated.
+        :param Literal['midpoint, 'average] or int threshold_method: The thresholding
+            method to use on the noisemap. This defaults to `'midpoint'` and the
+            mid-range value betwen the max and min value in the noise map will use.
+            If `'average'` is specified instead, the arithmetic mean across all values will be used.
+            An integer `q` in the range [0, 100] can be specified as well, in which case,
+            the q-th percentile will be used as the threshold.
+        :param bool lerping: Whether or not to use linear interpolation to find the endpoint
+            of the contour lines. Using linear interpolation will lead to smoother contour lines
+            along regions. This defaults to `False`.
         """
         if not isinstance(dimension, tuple):
             raise TypeError('Dimension must be a tuple of two ints.')
@@ -149,53 +138,34 @@ class SquareMarcher():
         animated: bool = False
     ) -> tuple[Axes, Optional[list[AxesImage, Line2D]]]:
         """
-        Run Marching Squares on a Perlin noisemap generated with the current configuration.
+        Run Marching Squares on a Perlin noisemap generated with the
+        current configuration.
 
-        ## Parameters:
-        ``ax: matplotlib.axes.Axes``
-            
-            a ``matplotlib.axes.Axes`` object to plot on.
         
-        ``z: int | float``
-        
-            the z-level to generate Perlin noise. If None is given, a uniform random\
-            number between 0-1 and chosen instead.
-
-        ``speed: int | float``
-
-            a number specifying how much to increment x and y when moving along\
-            the plane levelled at z. A big increment will lead to a noisier noisemap.
-
-        ``line_color: ColorType``
-        
-            the color of contour lines, should be a matplotlib's [color format](https://matplotlib.org/stable/users/explain/colors/colors.html#colors-def).\
-            This defaults to ``(1, 1, 0.5608)``
-
-        ``cmap: str | Colormap``
-        
-            the colormap to render the noisemap, should be a matplotlib's colormap.\
-                This defaults to ``'Greys'``.\\
+        :param matplotlib.axes.Axes ax: A `matplotlib.axes.Axes` object to plot on.
+        :param int or float z: The z-level to generate Perlin noise. If None is given,
+            a uniform random number between 0-1 and chosen instead.
+        :param int or float speed: A number specifying how much to increment x and y
+            when moving along the plane levelled at z. A big increment will lead to a
+            noisier noisemap.
+        :param matplotlib.typing.ColorType line_color: The color of contour lines,
+            should be a matplotlib's [color format](https://matplotlib.org/stable/users/explain/colors/colors.html#colors-def).
+            This defaults to `(1, 1, 0.5608)`.
+        :param str or matplotlib.colors.ColorMap cmap: The colormap to render the noisemap,
+            should be a matplotlib's colormap. This defaults to `'Greys'`.
             *Note: this only takes effect for grids of dimension higher than 20.*
             *For dimension 20 and below, noisemap is rendered as grid of points.*
-
-        ``dot_marker: str``
-        
-            matplotlib's point marker used for rendering the noisemap.\\
+        :param str dot_marker: matplotlib's point marker used for rendering the noisemap.
             *Note: this only takes effect for grids of dimension 20 and below. See above.*
+        :param bool animated: Whether or not to plot the artists with animated artists.
+            This defualts to `False`. Animated objects are not drawn to canvas unless
+            `artist.set_visible(True)` is called. This is useful when you need to create
+            animation with `matplotlib.animation.ArtistAnimation` or similar means.
+            If `animated=True`, the function will return back a list of `matplotlib.artist.Artists`
+            to be drawn on the given `matplotlib.axes.Axes`.
 
-        ``animated: bool``
-            
-            whether or not to plot the artists with animated artists.\
-                This defualts to ``False``.\\
-            Animated objects are not drawn to canvas unless artist.set_visible(True) is\
-                called. This is useful when you need to create animation with\
-            ``matplotlib.animation.ArtistAnimation`` or similar means.\\
-            If ``animated=True``, the function will return back a list of\
-                ``matplotlib.artist.Artists`` to be drawn on the given ``matplotlib.axes.Axes``.
-
-        ## Returns
-        A tuple of ``matplotlib.axes.Axes`` and optional list of ``matplotlib.artist.Artists``\
-            if ``animated=True``.
+        :return tuple[Axes, Optional[list[AxesImage, Line2D]]]: A tuple of `matplotlib.axes.Axes`
+            and optional list of `matplotlib.artist.Artists` if `animated=True`.
         """
         if len(generate_args):
             self.generate_scalar_field(*generate_args)
