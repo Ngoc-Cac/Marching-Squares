@@ -6,11 +6,15 @@ from marching_squares import NumericType
 
 # Note for the whole file:
 # The origin is at the TOP LEFT corner, just like in any graphics drawing
-def edge_lerp(t: NumericType, v_1: NumericType, v_2: NumericType) -> float:
+def edge_lerp(
+    t: NumericType,
+    v_1: NumericType,
+    v_2: NumericType
+) -> float:
     """
-    Linear interpolation between two corners' values in Marching Square according to\
+    Linear interpolation between two corners' values in Marching Square according to
         a threshold ``t``.
-    Think of this as drawing a line between ``(v_1, 0)`` and ``(v_2, 1)`` and then\
+    Think of this as drawing a line between ``(v_1, 0)`` and ``(v_2, 1)`` and then
         evaluate that line at the value ``t``. This gives the offest on the edge.
 
     ## Parameters:
@@ -20,7 +24,7 @@ def edge_lerp(t: NumericType, v_1: NumericType, v_2: NumericType) -> float:
 
     ``v_1: NumericType``
 
-        the value of first corner. This should be the corner where there is no\
+        the value of first corner. This should be the corner where there is no
             offset from the the top left corner.
 
     ``v_2: NumericType``
@@ -35,10 +39,11 @@ def edge_lerp(t: NumericType, v_1: NumericType, v_2: NumericType) -> float:
     """
     return (t - v_1) / (v_2 - v_1)
 
-def _rough_contouring(coordinates: tuple[int, int],
-                      tleft: bool, tright: bool,
-                      bright: bool, bleft: bool)\
-    -> tuple[tuple[float, float, float, float]]:
+def _rough_contouring(
+    coordinates: tuple[int, int],
+    tleft: bool, tright: bool,
+    bright: bool, bleft: bool
+) -> tuple[tuple[float, float, float, float]]:
     """
     Drawing contour lines based on the four corners
     """
@@ -63,12 +68,13 @@ def _rough_contouring(coordinates: tuple[int, int],
     elif case_no == 10:
         return (x + .5, x + 1, y, y + .5), (x + .5, x, y + 1, y + .5)
     
-def _smooth_contouring(coordinates: tuple[int, int],
-                       tleft: bool, tright: bool,
-                       bright: bool, bleft: bool,
-                       grid: np.ndarray[NumericType],
-                       threshold: NumericType)\
-    -> tuple[tuple[float, float, float, float]]:
+def _smooth_contouring(
+    coordinates: tuple[int, int],
+    tleft: bool, tright: bool,
+    bright: bool, bleft: bool,
+    grid: np.ndarray[NumericType],
+    threshold: NumericType
+) -> tuple[tuple[float, float, float, float]]:
     """
     Drawing contour lines based on the four corners' states with linear interpolation\
         using their values to find the intersection.
@@ -78,47 +84,98 @@ def _smooth_contouring(coordinates: tuple[int, int],
     if case_no == 0 or case_no == 15:
         return (), ()
     elif case_no == 1 or case_no == 14:
-        return (x + edge_lerp(threshold, grid[y + 1, x], grid[y + 1, x + 1]), x,
-                y + 1, y + edge_lerp(threshold, grid[y, x], grid[y + 1, x])),\
-               ()
-    elif case_no == 2 or case_no == 13:
-        return (x + 1, x + edge_lerp(threshold, grid[y + 1, x], grid[y + 1, x + 1]),
-                y + edge_lerp(threshold, grid[y, x + 1], grid[y + 1, x + 1]), y + 1),\
-               ()
-    elif case_no == 3 or case_no == 12:
-        return (x + 1, x,
-                y + edge_lerp(threshold, grid[y, x + 1], grid[y + 1, x + 1]),
-                y + edge_lerp(threshold, grid[y, x], grid[y + 1, x])),\
-               ()
-    elif case_no == 4 or case_no == 11:
-        return (x + edge_lerp(threshold, grid[y, x], grid[y, x + 1]), x + 1,
-                y, y + edge_lerp(threshold, grid[y, x + 1], grid[y + 1, x + 1])),\
-               ()
-    elif case_no == 6 or case_no == 9:
-        return (x + edge_lerp(threshold, grid[y, x], grid[y, x + 1]),
+        return (
+            (
                 x + edge_lerp(threshold, grid[y + 1, x], grid[y + 1, x + 1]),
-                y, y + 1),\
-               ()
+                x,
+                y + 1,
+                y + edge_lerp(threshold, grid[y, x], grid[y + 1, x])
+            ), ()
+        )
+    elif case_no == 2 or case_no == 13:
+        return (
+            (
+                x + 1,
+                x + edge_lerp(threshold, grid[y + 1, x], grid[y + 1, x + 1]),
+                y + edge_lerp(threshold, grid[y, x + 1], grid[y + 1, x + 1]),
+                y + 1
+            ), ()
+        )
+    elif case_no == 3 or case_no == 12:
+        return (
+            (
+                x + 1,
+                x,
+                y + edge_lerp(threshold, grid[y, x + 1], grid[y + 1, x + 1]),
+                y + edge_lerp(threshold, grid[y, x], grid[y + 1, x])
+            ),
+            ()
+        )
+    elif case_no == 4 or case_no == 11:
+        return (
+            (
+                x + edge_lerp(threshold, grid[y, x], grid[y, x + 1]),
+                x + 1,
+                y,
+                y + edge_lerp(threshold, grid[y, x + 1], grid[y + 1, x + 1])
+            ),
+            ()
+        )
+    elif case_no == 6 or case_no == 9:
+        return (
+            (
+                x + edge_lerp(threshold, grid[y, x], grid[y, x + 1]),
+                x + edge_lerp(threshold, grid[y + 1, x], grid[y + 1, x + 1]),
+                y,
+                y + 1
+            ), ()
+        )
     elif case_no == 7 or case_no == 8:
-        return (x, x + edge_lerp(threshold, grid[y, x], grid[y, x + 1]),
-                y + edge_lerp(threshold, grid[y, x], grid[y + 1, x]), y),\
-               ()
+        return (
+            (
+                x,
+                x + edge_lerp(threshold, grid[y, x], grid[y, x + 1]),
+                y + edge_lerp(threshold, grid[y, x], grid[y + 1, x]),
+                y
+            ), ()
+        )
     elif case_no == 5:
-        return (x + 1, x + edge_lerp(threshold, grid[y + 1, x], grid[y + 1, x + 1]),
-                y + edge_lerp(threshold, grid[y, x + 1], grid[y + 1, x + 1]), y + 1),\
-               (x, x + edge_lerp(threshold, grid[y, x], grid[y, x + 1]),
-                y + edge_lerp(threshold, grid[y, x], grid[y + 1, x]), y)
+        return (
+            (
+                x + 1,
+                x + edge_lerp(threshold, grid[y + 1, x], grid[y + 1, x + 1]),
+                y + edge_lerp(threshold, grid[y, x + 1], grid[y + 1, x + 1]),
+                y + 1
+            ),
+            (
+                x,
+                x + edge_lerp(threshold, grid[y, x], grid[y, x + 1]),
+                y + edge_lerp(threshold, grid[y, x], grid[y + 1, x]),
+                y
+            )
+        )
     elif case_no == 10:
-        return (x + edge_lerp(threshold, grid[y, x], grid[y, x + 1]), x + 1,
-                y, y + edge_lerp(threshold, grid[y, x + 1], grid[y + 1, x + 1])),\
-               (x + edge_lerp(threshold, grid[y + 1, x], grid[y + 1, x + 1]), x,
-                y + 1, y + edge_lerp(threshold, grid[y, x], grid[y + 1, x]))
+        return (
+            (
+                x + edge_lerp(threshold, grid[y, x], grid[y, x + 1]),
+                x + 1,
+                y,
+                y + edge_lerp(threshold, grid[y, x + 1], grid[y + 1, x + 1])
+            ),
+            (
+                x + edge_lerp(threshold, grid[y + 1, x], grid[y + 1, x + 1]),
+                x,
+                y + 1,
+                y + edge_lerp(threshold, grid[y, x], grid[y + 1, x])
+            )
+        )
     
 
-def draw_contours(grid: np.ndarray[NumericType],
-                  threshold: NumericType,
-                  lerp: bool = False)\
-    -> list[tuple[float, float]]:
+def draw_contours(
+    grid: np.ndarray[NumericType],
+    threshold: NumericType,
+    lerp: bool = False
+) -> list[tuple[float, float]]:
     """
     The Marching Squares algorithm in its entirety.\\
     This is supposed to be a multi-purpose function for internal use.
@@ -169,11 +226,13 @@ def draw_contours(grid: np.ndarray[NumericType],
     contouring = (lambda *args: _smooth_contouring(*args, grid, threshold)) if lerp else _rough_contouring
     for i in range(rows - 1):
         for j in range(cols - 1):
-            line1, line2 = contouring((j, i),
-                                      mask[i    , j    ],
-                                      mask[i    , j + 1],
-                                      mask[i + 1, j + 1],
-                                      mask[i + 1, j    ])
+            line1, line2 = contouring(
+                (j, i),
+                mask[i    , j    ],
+                mask[i    , j + 1],
+                mask[i + 1, j + 1],
+                mask[i + 1, j    ]
+            )
             if line1:
                 lines.append(line1[:2])
                 lines.append(line1[2:])
