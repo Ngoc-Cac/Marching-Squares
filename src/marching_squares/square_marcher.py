@@ -61,25 +61,9 @@ class SquareMarcher():
             of the contour lines. Using linear interpolation will lead to smoother contour lines
             along regions. This defaults to `False`.
         """
-        if not isinstance(dimension, tuple):
-            raise TypeError('Dimension must be a tuple of two ints.')
-        elif len(dimension) != 2 or any((not isinstance(num, int) or num < 1) for num in dimension):
-            raise ValueError("'dimension' must be a tuple of two positive integers")
-        if isinstance(threshold_method, int):
-            if threshold_method > 100 or threshold_method < 0:
-                raise ValueError('Percentage of percentile must be in the range [0, 100]')
-            self._qth = threshold_method
-            threshold_method = 'percentile'
-        elif not threshold_method in ['midpoint', 'average']:
-            raise ValueError(f"Expected 'threshold_method' to be 'midpoint' or 'average' or a percentile percentage: {threshold_method}")
-        if not isinstance(lerping, bool):
-            raise TypeError("'lerping' must be a bool")
-
-        self._dim = dimension
-        self._thres_method: Literal['midpoint', 'average', 'percentile'] = threshold_method
-        self._lerping = lerping
-        
-        self._initialize_grid()
+        self.threshold_method = threshold_method
+        self.lerping = lerping
+        self.dimension = dimension
 
     
     @property
