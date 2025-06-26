@@ -348,8 +348,10 @@ class PerlinMarcher(SquareMarcher):
         self._noise_module.seed = value
         self._prng.seed(value)
 
-    def generate_scalar_field(self, z: Optional[NumericType] = None,
-                               speed: Optional[NumericType] = None):
+    def generate_scalar_field(self,
+        z: Optional[NumericType] = None,
+        speed: Optional[NumericType] = None
+    ):
         if z is None: z = self._prng.random() * 100
         if speed is None: speed = 1 / max(self._dim)
         for i in range(self._dim[0]):
