@@ -102,7 +102,10 @@ class SquareMarcher():
             self._qth = value
             value = 'percentile'
         elif not value in ['midpoint', 'average']:
-            raise ValueError(f"Expected 'threshold_method' to be 'midpoint' or 'average' or a percentile percentage: {value}")
+            raise ValueError(
+                "Expected 'threshold_method' to be 'midpoint' or"
+                f" 'average' or a percentile percentage: {value}"
+            )
         self._thres_method = value
 
 
@@ -472,12 +475,16 @@ class OpenSimplexMarcher(SquareMarcher):
         '_ys'
     )
     def __init__(self,
-                 dimension: tuple[int, int],
-                 seed = None,
-                 threshold_method: Literal['midpoint', 'average'] | int = 'midpoint',
-                 lerping: bool = False):
+        dimension: tuple[int, int],
+        seed = None,
+        threshold_method: Literal['midpoint', 'average'] | int = 'midpoint',
+        lerping: bool = False
+    ):
         if opensimplex is None:
-            raise ImportError('Could not import opensimplex library, this could be because the library has not beend installed')
+            raise ImportError(
+                'Could not import opensimplex library, this could be because'
+                'the library has not been installed'
+            )
         super().__init__(dimension, threshold_method, lerping)
         
         if seed is None:
